@@ -1,0 +1,89 @@
+[2025-12-02 06:42:12] [AM1764654132CET06] Session started. ID: hv2vvk5fb78d9itln7i2v30n1n
+[2025-12-02 06:42:12] [AM1764654132CET06] No user ID in session
+[2025-12-02 06:42:31] [AM1764654151CET06] Session started. ID: 49cp7jmod07v9s54i4tc7nkp8n
+[2025-12-02 06:42:31] [AM1764654151CET06] No user ID in session
+[2025-12-02 06:42:31] [DecemberAMV] Request Method: GET
+[2025-12-02 06:42:31] [DecemberAMV] Session ID before start: 
+[2025-12-02 06:42:31] [DecemberAMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:42:31] [DecemberAMV] User ID in session: Not set
+[2025-12-02 06:42:31] [DecemberAMV] Unauthorized access attempt
+[2025-12-02 06:42:49] [DecemberAMV] Request Method: POST
+[2025-12-02 06:42:49] [DecemberAMV] Session ID before start: 
+[2025-12-02 06:42:49] [DecemberAMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:42:49] [DecemberAMV] User ID in session: Not set
+[2025-12-02 06:42:49] [DecemberAMV] Unauthorized access attempt
+[2025-12-02 06:42:57] [DecemberAMV] Request Method: POST
+[2025-12-02 06:42:57] [DecemberAMV] Session ID before start: 
+[2025-12-02 06:42:57] [DecemberAMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:42:57] [DecemberAMV] User ID in session: Not set
+[2025-12-02 06:42:57] [DecemberAMV] Unauthorized access attempt
+[2025-12-02 06:46:18] [AM1764654378CET06] Session started. ID: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:46:18] [AM1764654378CET06] No user ID in session
+[2025-12-02 06:46:18] [DecemberAMV] Request Method: GET
+[2025-12-02 06:46:18] [DecemberAMV] Session ID before start: 
+[2025-12-02 06:46:18] [DecemberAMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:46:18] [DecemberAMV] User ID in session: 1
+[2025-12-02 06:46:21] [DecemberAMV] Request Method: POST
+[2025-12-02 06:46:21] [DecemberAMV] Session ID before start: 
+[2025-12-02 06:46:21] [DecemberAMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:46:21] [DecemberAMV] User ID in session: 1
+[2025-12-02 06:46:23] [DecemberAMV] Request Method: DELETE
+[2025-12-02 06:46:23] [DecemberAMV] Session ID before start: 
+[2025-12-02 06:46:23] [DecemberAMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:46:23] [DecemberAMV] User ID in session: 1
+[2025-12-02 06:46:25] [DecemberAMV] Request Method: POST
+[2025-12-02 06:46:25] [DecemberAMV] Session ID before start: 
+[2025-12-02 06:46:25] [DecemberAMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:46:25] [DecemberAMV] User ID in session: 1
+[2025-12-02 06:46:41] [AM1764654401CET06] Session started. ID: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:46:41] [AM1764654401CET06] User ID in session: 1
+[2025-12-02 06:46:41] [DecemberAMV] Request Method: GET
+[2025-12-02 06:46:41] [DecemberAMV] Session ID before start: 
+[2025-12-02 06:46:41] [DecemberAMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:46:41] [DecemberAMV] User ID in session: 1
+[2025-12-02 06:47:00] [DecemberAMV] Request Method: DELETE
+[2025-12-02 06:47:00] [DecemberAMV] Session ID before start: 
+[2025-12-02 06:47:00] [DecemberAMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:47:00] [DecemberAMV] User ID in session: 1
+[2025-12-02 06:47:12] [DecemberAMV] Request Method: POST
+[2025-12-02 06:47:12] [DecemberAMV] Session ID before start: 
+[2025-12-02 06:47:12] [DecemberAMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:47:12] [DecemberAMV] User ID in session: 1
+[2025-12-02 06:47:13] [DecemberAMV] Request Method: DELETE
+[2025-12-02 06:47:13] [DecemberAMV] Session ID before start: 
+[2025-12-02 06:47:13] [DecemberAMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:47:13] [DecemberAMV] User ID in session: 1
+[2025-12-02 06:47:16] [DecemberAMV] Request Method: DELETE
+[2025-12-02 06:47:16] [DecemberAMV] Session ID before start: 
+[2025-12-02 06:47:16] [DecemberAMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 06:47:16] [DecemberAMV] User ID in session: 1
+[2025-12-02 17:13:37] [PM1764692017CET17] Session started. ID: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 17:13:37] [PM1764692017CET17] User ID in session: 1
+[2025-12-02 17:13:37] [DecemberPMV] Request Method: GET
+[2025-12-02 17:13:37] [DecemberPMV] Session ID before start: 
+[2025-12-02 17:13:37] [DecemberPMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 17:13:37] [DecemberPMV] User ID in session: 1
+[2025-12-02 17:13:42] [DecemberPMV] Request Method: POST
+[2025-12-02 17:13:42] [DecemberPMV] Session ID before start: 
+[2025-12-02 17:13:42] [DecemberPMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 17:13:42] [DecemberPMV] User ID in session: 1
+[2025-12-02 17:13:47] [DecemberPMV] Request Method: DELETE
+[2025-12-02 17:13:47] [DecemberPMV] Session ID before start: 
+[2025-12-02 17:13:47] [DecemberPMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 17:13:47] [DecemberPMV] User ID in session: 1
+[2025-12-02 17:38:58] [PM1764693538CET17] Session started. ID: t86oibuae7gq13cvpgipfi9fds
+[2025-12-02 17:38:58] [PM1764693538CET17] No user ID in session
+[2025-12-02 23:01:29] [PM1764712889CET23] Session started. ID: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 23:01:29] [PM1764712889CET23] User ID in session: 1
+[2025-12-02 23:01:29] [DecemberPMV] Request Method: GET
+[2025-12-02 23:01:29] [DecemberPMV] Session ID before start: 
+[2025-12-02 23:01:29] [DecemberPMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-02 23:01:29] [DecemberPMV] User ID in session: 1
+[2025-12-03 04:40:22] [AM1764733222CET04] Session started. ID: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-03 04:40:22] [AM1764733222CET04] User ID in session: 1
+[2025-12-03 04:40:22] [DecemberAMV] Request Method: GET
+[2025-12-03 04:40:22] [DecemberAMV] Session ID before start: 
+[2025-12-03 04:40:22] [DecemberAMV] Session ID after start: 4b6ecbcohq5m3gcs5pcus46nv8
+[2025-12-03 04:40:22] [DecemberAMV] User ID in session: 1
+[2025-12-03 22:12:41] [PM1764796361CET22] Session started. ID: skkuh2a3dosk158mugcpf2pvjs
+[2025-12-03 22:12:41] [PM1764796361CET22] No user ID in session
