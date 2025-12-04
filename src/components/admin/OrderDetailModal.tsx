@@ -1,4 +1,4 @@
-import { X, Check, AlertTriangle, XCircle } from "lucide-react";
+import { X, Check, AlertTriangle, XCircle, Truck } from "lucide-react";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 
 interface OrderItem {
@@ -16,9 +16,9 @@ interface OrderDetailModalProps {
   items: OrderItem[];
   orderDate: string;
   paymentMethod: string;
-  status: 'entregado' | 'pendiente' | 'cancelado';
+  status: 'entregado' | 'pendiente' | 'cancelado' | 'enviado';
   onClose: () => void;
-  onStatusChange: (newStatus: 'entregado' | 'pendiente' | 'cancelado') => void;
+  onStatusChange: (newStatus: 'entregado' | 'pendiente' | 'cancelado' | 'enviado') => void;
 }
 
 export function OrderDetailModal({
@@ -35,6 +35,7 @@ export function OrderDetailModal({
   const statusConfig = {
     entregado: { label: 'Entregado', color: 'text-green-600' },
     pendiente: { label: 'Pendiente', color: 'text-yellow-600' },
+    enviado: { label: 'Enviado', color: 'text-blue-600' },
     cancelado: { label: 'Cancelado', color: 'text-red-600' },
   };
 
@@ -92,40 +93,56 @@ export function OrderDetailModal({
                 <p className={`text-2xl ${statusConfig[status].color}`}>
                   {statusConfig[status].label}
                 </p>
-                
+
                 {/* Action Buttons */}
                 <div className="flex items-center gap-3 mt-4">
                   <button
                     onClick={() => onStatusChange('entregado')}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                      status === 'entregado' 
-                        ? 'bg-green-500 text-white shadow-lg scale-110' 
-                        : 'bg-green-100 text-green-600 hover:bg-green-200'
-                    }`}
+                    className="w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg"
+                    style={{
+                      backgroundColor: status === 'entregado' ? '#22c55e' : '#dcfce7',
+                      color: status === 'entregado' ? '#ffffff' : '#16a34a',
+                      transform: status === 'entregado' ? 'scale(1.1)' : 'scale(1)'
+                    }}
                     title="Marcar como entregado"
                   >
                     <Check className="w-6 h-6" />
                   </button>
-                  
+
                   <button
                     onClick={() => onStatusChange('pendiente')}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                      status === 'pendiente' 
-                        ? 'bg-yellow-500 text-white shadow-lg scale-110' 
-                        : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
-                    }`}
+                    className="w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg"
+                    style={{
+                      backgroundColor: status === 'pendiente' ? '#eab308' : '#fef9c3',
+                      color: status === 'pendiente' ? '#ffffff' : '#ca8a04',
+                      transform: status === 'pendiente' ? 'scale(1.1)' : 'scale(1)'
+                    }}
                     title="Marcar como pendiente"
                   >
                     <AlertTriangle className="w-6 h-6" />
                   </button>
-                  
+
+                  <button
+                    onClick={() => onStatusChange('enviado')}
+                    className="w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg"
+                    style={{
+                      backgroundColor: status === 'enviado' ? '#3b82f6' : '#dbeafe',
+                      color: status === 'enviado' ? '#ffffff' : '#2563eb',
+                      transform: status === 'enviado' ? 'scale(1.1)' : 'scale(1)'
+                    }}
+                    title="Marcar como enviado"
+                  >
+                    <Truck className="w-6 h-6" />
+                  </button>
+
                   <button
                     onClick={() => onStatusChange('cancelado')}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                      status === 'cancelado' 
-                        ? 'bg-red-500 text-white shadow-lg scale-110' 
-                        : 'bg-red-100 text-red-600 hover:bg-red-200'
-                    }`}
+                    className="w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg"
+                    style={{
+                      backgroundColor: status === 'cancelado' ? '#ef4444' : '#fee2e2',
+                      color: status === 'cancelado' ? '#ffffff' : '#dc2626',
+                      transform: status === 'cancelado' ? 'scale(1.1)' : 'scale(1)'
+                    }}
                     title="Marcar como cancelado"
                   >
                     <XCircle className="w-6 h-6" />

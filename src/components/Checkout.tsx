@@ -9,8 +9,17 @@ interface CheckoutProps {
 
 export function Checkout({ onNavigate }: CheckoutProps) {
   const { cartItems, total, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, checkSession } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
+
+  // Load redeemed points from localStorage
+  useEffect(() => {
+    const savedPoints = localStorage.getItem('redeemedPoints');
+    if (savedPoints) {
+      setPointsToRedeem(parseInt(savedPoints));
+    }
+  }, []);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -54,8 +63,8 @@ export function Checkout({ onNavigate }: CheckoutProps) {
   };
 
   const shipping = total > 2000 ? 0 : 200;
-  const discount = 0;
-  const finalTotal = total + shipping - discount;
+  const pointsDiscount = Math.floor(pointsToRedeem / 1.5);
+  const finalTotal = Math.max(0, total + shipping - pointsDiscount);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +79,9 @@ export function Checkout({ onNavigate }: CheckoutProps) {
         price: item.price
       })),
       total: finalTotal,
-      paymentMethod: 'card'
+      paymentMethod: 'card',
+      pointsRedeemed: pointsToRedeem,
+      pointsDiscount: pointsDiscount
     };
 
     try {
@@ -79,6 +90,7 @@ export function Checkout({ onNavigate }: CheckoutProps) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(orderData),
       });
 
@@ -87,7 +99,15 @@ export function Checkout({ onNavigate }: CheckoutProps) {
         throw new Error(errorData.message || 'Error processing order');
       }
 
+      // Clear cart and redeemed points
       clearCart();
+      localStorage.removeItem('redeemedPoints');
+
+      // Refresh user session to update points
+      if (user) {
+        await checkSession();
+      }
+
       onNavigate('receipt');
     } catch (error) {
       console.error(error);
@@ -389,10 +409,10 @@ export function Checkout({ onNavigate }: CheckoutProps) {
                   <span className="opacity-70">Envío</span>
                   <span>${shipping === 0 ? 'Gratis' : `$${shipping.toLocaleString('es-MX')}`}</span>
                 </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Descuento</span>
-                    <span>-${discount.toLocaleString('es-MX')}</span>
+                {pointsDiscount > 0 && (
+                  <div className="flex justify-between text-purple-600">
+                    <span>Descuento por puntos</span>
+                    <span>-${pointsDiscount.toLocaleString('es-MX')}</span>
                   </div>
                 )}
               </div>

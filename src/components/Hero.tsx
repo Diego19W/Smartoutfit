@@ -12,7 +12,7 @@ export function Hero({ onNavigate }: HeroProps) {
         alt="Hero Fashion"
         className="w-full h-full object-cover"
       />
-      
+
       <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
         <div className="text-center text-white max-w-2xl px-4">
           <h2 className="text-5xl sm:text-6xl tracking-[0.2em] mb-6">
@@ -21,8 +21,8 @@ export function Hero({ onNavigate }: HeroProps) {
           <p className="text-lg tracking-wider mb-8 opacity-90">
             Elegancia Redefinida
           </p>
-          <button 
-            onClick={() => onNavigate('collection')}
+          <button
+            onClick={() => onNavigate('home')} ///Boton para ir a coleccion
             className="bg-white text-black px-8 py-3 tracking-widest hover:bg-black hover:text-white transition-colors duration-300"
           >
             EXPLORAR

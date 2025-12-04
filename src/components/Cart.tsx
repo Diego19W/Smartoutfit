@@ -1,6 +1,8 @@
 import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { Trash2, Plus, Minus, Tag, ShoppingBag } from "lucide-react";
+import { Trash2, Plus, Minus, Tag, ShoppingBag, Gift } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
+import { useState, useEffect } from "react";
 
 interface CartProps {
   onNavigate: (page: string) => void;
@@ -8,10 +10,33 @@ interface CartProps {
 
 export function Cart({ onNavigate }: CartProps) {
   const { cartItems, removeFromCart, updateQuantity, total } = useCart();
+  const { user } = useAuth();
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
+  const [pointsInput, setPointsInput] = useState("");
+
+  // Load redeemed points from localStorage
+  useEffect(() => {
+    const savedPoints = localStorage.getItem('redeemedPoints');
+    if (savedPoints) {
+      setPointsToRedeem(parseInt(savedPoints));
+    }
+  }, []);
+
+  // Save redeemed points to localStorage
+  useEffect(() => {
+    localStorage.setItem('redeemedPoints', pointsToRedeem.toString());
+  }, [pointsToRedeem]);
 
   const shipping = total > 2000 ? 0 : 200;
-  const discount = 0; // Placeholder for now
-  const finalTotal = total + shipping - discount;
+
+  // Calculate total points needed to redeem entire cart
+  // Formula: Each product costs price x 1.5 points (shipping NOT included)
+  const totalPointsNeeded = Math.ceil(total * 1.5);
+
+  // Calculate discount from points
+  // Each point equals $0.67 (1 / 1.5)
+  const pointsDiscount = Math.floor(pointsToRedeem / 1.5);
+  const finalTotal = Math.max(0, total + shipping - pointsDiscount);
 
   return (
     <div className="min-h-screen bg-white">
@@ -42,7 +67,7 @@ export function Cart({ onNavigate }: CartProps) {
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
               {cartItems.map((item) => (
-                <div key={`${item.id}-${item.selectedSize}`} className="bg-white border border-black/10 p-6">
+                <div key={`${item.id} -${item.selectedSize} `} className="bg-white border border-black/10 p-6">
                   <div className="flex gap-6">
                     {/* Image */}
                     <div className="w-32 h-32 bg-neutral-100 flex-shrink-0">
@@ -110,6 +135,88 @@ export function Cart({ onNavigate }: CartProps) {
                   </button>
                 </div>
               </div>
+
+              {/* Points Redemption */}
+              {user && (
+                <div className="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Gift className="w-5 h-5 text-purple-600" />
+                    <h4 className="tracking-wider">CANJEAR PUNTOS</h4>
+                  </div>
+
+
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm opacity-70">Puntos disponibles:</span>
+                      <span className="font-semibold text-purple-600">{user.puntos || 0} pts</span>
+                    </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm opacity-70">Para canjear todo:</span>
+                      <span className="font-semibold text-purple-600">{totalPointsNeeded} pts</span>
+                    </div>
+                    <p className="text-xs opacity-60">1 punto equivale a $0.67</p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={pointsInput}
+                      onChange={(e) => setPointsInput(e.target.value)}
+                      placeholder="Cantidad de puntos"
+                      min="0"
+                      max={user.puntos || 0}
+                      className="flex-1 p-3 border border-purple-300 bg-white focus:border-purple-500 outline-none placeholder:opacity-40"
+                    />
+                    <button
+                      onClick={() => {
+                        const points = parseInt(pointsInput);
+                        const maxPoints = Math.min(user.puntos || 0, totalPointsNeeded); // Can't use more points than needed to redeem cart
+
+                        if (isNaN(points) || points <= 0) {
+                          alert('Por favor ingresa una cantidad válida de puntos');
+                          return;
+                        }
+
+                        if (points > (user.puntos || 0)) {
+                          alert(`Solo tienes ${user.puntos || 0} puntos disponibles`);
+                          return;
+                        }
+
+                        if (points > totalPointsNeeded) {
+                          alert(`Solo necesitas ${totalPointsNeeded} puntos para canjear todo el carrito`);
+                          return;
+                        }
+
+                        setPointsToRedeem(points);
+                        setPointsInput("");
+                      }}
+                      className="px-6 py-3 bg-purple-600 text-white tracking-wider hover:bg-purple-700 transition-colors"
+                    >
+                      APLICAR
+                    </button>
+                  </div>
+
+                  {pointsToRedeem > 0 && (
+                    <div className="mt-4 p-3 bg-white border border-purple-300 rounded">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-purple-700">Puntos aplicados:</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-purple-700">-{pointsToRedeem.toLocaleString('es-MX')}</span>
+                          <button
+                            onClick={() => {
+                              setPointsToRedeem(0);
+                              setPointsInput("");
+                            }}
+                            className="text-xs text-red-600 hover:text-red-700 underline"
+                          >
+                            Quitar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Order Summary */}
@@ -128,15 +235,15 @@ export function Cart({ onNavigate }: CartProps) {
                     <span className="opacity-70">Envío</span>
                     <span>${shipping === 0 ? 'Gratis' : `$${shipping.toLocaleString('es-MX')}`}</span>
                   </div>
-                  {discount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Descuento</span>
-                      <span>-${discount.toLocaleString('es-MX')}</span>
+                  {pointsDiscount > 0 && (
+                    <div className="flex justify-between text-purple-600">
+                      <span>Descuento por puntos</span>
+                      <span>-${pointsDiscount.toLocaleString('es-MX')}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-blue-600 text-sm">
                     <span>Puntos a ganar</span>
-                    <span>+{Math.floor(total * 0.08)} pts</span>
+                    <span>+{Math.floor(finalTotal * 0.05)} pts</span>
                   </div>
                 </div>
 

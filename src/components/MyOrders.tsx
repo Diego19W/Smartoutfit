@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { ShoppingBag, Clock, CheckCircle, XCircle } from "lucide-react";
+import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, Filter as FilterIcon } from "lucide-react";
 
 interface OrderItem {
     id: string;
@@ -25,10 +25,15 @@ interface MyOrdersProps {
     onNavigate: (page: string) => void;
 }
 
+type TimeRange = 'all' | '24h' | '3d' | '7d';
+type OrderStatus = 'all' | 'pendiente' | 'enviado' | 'entregado' | 'cancelado';
+
 export function MyOrders({ onNavigate }: MyOrdersProps) {
     const { user, isAuthenticated } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [timeRange, setTimeRange] = useState<TimeRange>('all');
+    const [statusFilter, setStatusFilter] = useState<OrderStatus>('all');
 
     useEffect(() => {
         if (isAuthenticated && user) {
@@ -49,6 +54,34 @@ export function MyOrders({ onNavigate }: MyOrdersProps) {
             setLoading(false);
         }
     };
+
+    // Function to check if order is within time range
+    const isWithinTimeRange = (orderDate: string, range: TimeRange): boolean => {
+        if (range === 'all') return true;
+
+        const orderTime = new Date(orderDate).getTime();
+        const now = new Date().getTime();
+        const hourInMs = 60 * 60 * 1000;
+        const dayInMs = 24 * hourInMs;
+
+        switch (range) {
+            case '24h':
+                return (now - orderTime) <= dayInMs;
+            case '3d':
+                return (now - orderTime) <= (3 * dayInMs);
+            case '7d':
+                return (now - orderTime) <= (7 * dayInMs);
+            default:
+                return true;
+        }
+    };
+
+    // Filter orders
+    const filteredOrders = orders.filter(order => {
+        const matchesTimeRange = isWithinTimeRange(order.date, timeRange);
+        const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+        return matchesTimeRange && matchesStatus;
+    });
 
     if (!isAuthenticated) {
         return (
@@ -82,6 +115,110 @@ export function MyOrders({ onNavigate }: MyOrdersProps) {
                     <h1 className="text-3xl tracking-wider">MIS PEDIDOS</h1>
                 </div>
 
+                {/* Filters Section */}
+                <div className="bg-white border border-black/5 p-6 mb-6 shadow-sm">
+                    {/* Time Range Filter */}
+                    <div className="mb-6">
+                        <div className="flex items-center gap-3 mb-3">
+                            <Clock className="w-5 h-5 opacity-60" />
+                            <span className="text-sm opacity-60 tracking-wider">RANGO DE TIEMPO:</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={() => setTimeRange('all')}
+                                className={`px-4 py-2 text-sm tracking-wider transition-all ${timeRange === 'all'
+                                    ? 'bg-black text-white'
+                                    : 'bg-white border border-black/20 hover:bg-neutral-50'
+                                    }`}
+                            >
+                                Todos
+                            </button>
+                            <button
+                                onClick={() => setTimeRange('24h')}
+                                className={`px-4 py-2 text-sm tracking-wider transition-all ${timeRange === '24h'
+                                    ? 'bg-black text-white'
+                                    : 'bg-white border border-black/20 hover:bg-neutral-50'
+                                    }`}
+                            >
+                                Últimas 24h
+                            </button>
+                            <button
+                                onClick={() => setTimeRange('3d')}
+                                className={`px-4 py-2 text-sm tracking-wider transition-all ${timeRange === '3d'
+                                    ? 'bg-black text-white'
+                                    : 'bg-white border border-black/20 hover:bg-neutral-50'
+                                    }`}
+                            >
+                                Últimos 3 días
+                            </button>
+                            <button
+                                onClick={() => setTimeRange('7d')}
+                                className={`px-4 py-2 text-sm tracking-wider transition-all ${timeRange === '7d'
+                                    ? 'bg-black text-white'
+                                    : 'bg-white border border-black/20 hover:bg-neutral-50'
+                                    }`}
+                            >
+                                Últimos 7 días
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Status Filter */}
+                    <div className="pt-6 border-t border-black/5">
+                        <div className="flex items-center gap-3 mb-3">
+                            <FilterIcon className="w-5 h-5 opacity-60" />
+                            <span className="text-sm opacity-60 tracking-wider">ESTADO:</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={() => setStatusFilter('all')}
+                                className={`px-4 py-2 text-sm tracking-wider transition-all ${statusFilter === 'all'
+                                    ? 'bg-black text-white'
+                                    : 'bg-white border border-black/20 hover:bg-neutral-50'
+                                    }`}
+                            >
+                                Todos
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter('pendiente')}
+                                className={`px-4 py-2 text-sm tracking-wider transition-all ${statusFilter === 'pendiente'
+                                    ? 'bg-yellow-600 text-white'
+                                    : 'bg-white border border-yellow-200 hover:bg-yellow-50'
+                                    }`}
+                            >
+                                Pendiente
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter('enviado')}
+                                className={`px-4 py-2 text-sm tracking-wider transition-all ${statusFilter === 'enviado'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-white border border-blue-200 hover:bg-blue-50'
+                                    }`}
+                            >
+                                Enviado
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter('entregado')}
+                                className={`px-4 py-2 text-sm tracking-wider transition-all ${statusFilter === 'entregado'
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-white border border-green-200 hover:bg-green-50'
+                                    }`}
+                            >
+                                Entregado
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter('cancelado')}
+                                className={`px-4 py-2 text-sm tracking-wider transition-all ${statusFilter === 'cancelado'
+                                    ? 'bg-red-600 text-white'
+                                    : 'bg-white border border-red-200 hover:bg-red-50'
+                                    }`}
+                            >
+                                Cancelado
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 {orders.length === 0 ? (
                     <div className="bg-white p-12 text-center border border-black/5">
                         <ShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-20" />
@@ -96,7 +233,7 @@ export function MyOrders({ onNavigate }: MyOrdersProps) {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {orders.map((order) => (
+                        {filteredOrders.map((order) => (
                             <div key={order.id} className="bg-white border border-black/5 p-6 shadow-sm">
                                 <div className="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-black/5 pb-4">
                                     <div>
@@ -116,13 +253,15 @@ export function MyOrders({ onNavigate }: MyOrdersProps) {
                                     </div>
                                     <div>
                                         <p className="text-sm text-neutral-500 mb-1">ESTADO</p>
-                                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm ${order.status === 'completado' ? 'bg-green-100 text-green-800' :
+                                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm ${order.status === 'entregado' ? 'bg-green-100 text-green-800' :
                                                 order.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                                                    'bg-red-100 text-red-800'
+                                                    order.status === 'enviado' ? 'bg-blue-100 text-blue-800' :
+                                                        'bg-red-100 text-red-800'
                                             }`}>
-                                            {order.status === 'completado' ? <CheckCircle className="w-4 h-4" /> :
+                                            {order.status === 'entregado' ? <CheckCircle className="w-4 h-4" /> :
                                                 order.status === 'pendiente' ? <Clock className="w-4 h-4" /> :
-                                                    <XCircle className="w-4 h-4" />}
+                                                    order.status === 'enviado' ? <Truck className="w-4 h-4" /> :
+                                                        <XCircle className="w-4 h-4" />}
                                             <span className="capitalize">{order.status}</span>
                                         </span>
                                     </div>

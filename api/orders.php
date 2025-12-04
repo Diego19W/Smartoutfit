@@ -180,16 +180,43 @@ function createOrder($pdo) {
             $updateStockTableStmt->bindValue(':id_producto', $item->productId);
             $updateStockTableStmt->bindValue(':talla', $item->size);
             $updateStockTableStmt->execute();
+        }
 
-            // Calculate and award points (8% of item price)
-            $pointsEarned = floor(($item->price * $item->quantity) * 0.08);
-            if ($pointsEarned > 0) {
-                $updatePointsSql = "UPDATE usuarios SET puntos = puntos + :puntos WHERE id = :id_usuario";
-                $updatePointsStmt = $pdo->prepare($updatePointsSql);
-                $updatePointsStmt->bindValue(':puntos', $pointsEarned);
-                $updatePointsStmt->bindValue(':id_usuario', $id_usuario);
-                $updatePointsStmt->execute();
+        // 5. Handle Points Redemption and Rewards
+        $pointsRedeemed = $data->pointsRedeemed ?? 0;
+        $finalTotal = $data->total ?? 0;
+        
+        if ($pointsRedeemed > 0 && $id_usuario) {
+            // Verify user has enough points
+            $checkPointsSql = "SELECT puntos FROM usuarios WHERE id = :id_usuario";
+            $checkPointsStmt = $pdo->prepare($checkPointsSql);
+            $checkPointsStmt->execute([':id_usuario' => $id_usuario]);
+            $userData = $checkPointsStmt->fetch(PDO::FETCH_ASSOC);
+            
+            $currentPoints = $userData['puntos'] ?? 0;
+            
+            if ($currentPoints < $pointsRedeemed) {
+                throw new Exception("Puntos insuficientes. Disponible: {$currentPoints}, Solicitado: {$pointsRedeemed}");
             }
+            
+            // Subtract redeemed points
+            $subtractPointsSql = "UPDATE usuarios SET puntos = puntos - :puntos WHERE id = :id_usuario";
+            $subtractPointsStmt = $pdo->prepare($subtractPointsSql);
+            $subtractPointsStmt->execute([
+                ':puntos' => $pointsRedeemed,
+                ':id_usuario' => $id_usuario
+            ]);
+        }
+        
+        // Award points based on FINAL total (after discount) - 5%
+        $pointsEarned = floor($finalTotal * 0.05);
+        if ($pointsEarned > 0 && $id_usuario) {
+            $updatePointsSql = "UPDATE usuarios SET puntos = puntos + :puntos WHERE id = :id_usuario";
+            $updatePointsStmt = $pdo->prepare($updatePointsSql);
+            $updatePointsStmt->execute([
+                ':puntos' => $pointsEarned,
+                ':id_usuario' => $id_usuario
+            ]);
         }
 
         $pdo->commit();

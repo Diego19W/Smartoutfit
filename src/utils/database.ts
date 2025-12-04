@@ -200,7 +200,7 @@ export interface Order {
   quantity: number;
   date: string;
   total: number;
-  status: 'entregado' | 'pendiente' | 'cancelado';
+  status: 'entregado' | 'pendiente' | 'cancelado' | 'enviado';
   paymentMethod: string;
   items: OrderItem[];
 }
@@ -225,7 +225,7 @@ export async function getOrders(): Promise<Order[]> {
 /**
  * Actualizar estado del pedido
  */
-export async function updateOrderStatus(id: string, status: 'entregado' | 'pendiente' | 'cancelado'): Promise<void> {
+export async function updateOrderStatus(id: string, status: 'entregado' | 'pendiente' | 'cancelado' | 'enviado'): Promise<void> {
   try {
     const response = await fetch(`${API_BASE_URL}/orders.php`, {
       method: 'PUT',

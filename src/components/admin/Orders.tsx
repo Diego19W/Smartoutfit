@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
-import { Eye, Download, Package, Search, Calendar, Filter } from "lucide-react";
+import { Eye, Download, Package, Search, Calendar, Filter, Clock, Check, AlertTriangle, XCircle, Truck } from "lucide-react";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { OrderDetailModal } from "./OrderDetailModal";
 import { CustomSelect } from "../CustomSelect";
 import { getOrders, updateOrderStatus, Order } from "../../utils/database";
 
-type OrderStatus = 'all' | 'entregado' | 'pendiente' | 'cancelado';
+type OrderStatus = 'all' | 'entregado' | 'pendiente' | 'cancelado' | 'enviado';
+type TimeRange = 'all' | '24h' | '3d' | '7d';
 
 export function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeStatus, setActiveStatus] = useState<OrderStatus>('all');
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [timeRange, setTimeRange] = useState<TimeRange>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,18 +33,41 @@ export function Orders() {
     }
   };
 
+  // Function to check if order is within time range
+  const isWithinTimeRange = (orderDate: string, range: TimeRange): boolean => {
+    if (range === 'all') return true;
+
+    const orderTime = new Date(orderDate).getTime();
+    const now = new Date().getTime();
+    const hourInMs = 60 * 60 * 1000;
+    const dayInMs = 24 * hourInMs;
+
+    switch (range) {
+      case '24h':
+        return (now - orderTime) <= dayInMs;
+      case '3d':
+        return (now - orderTime) <= (3 * dayInMs);
+      case '7d':
+        return (now - orderTime) <= (7 * dayInMs);
+      default:
+        return true;
+    }
+  };
+
   const filteredOrders = orders.filter(order => {
     const matchesStatus = activeStatus === 'all' || order.status === activeStatus;
     const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.productName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDate = !dateFilter || order.date.includes(dateFilter);
+    const matchesTimeRange = isWithinTimeRange(order.date, timeRange);
 
-    return matchesStatus && matchesSearch && matchesDate;
+    return matchesStatus && matchesSearch && matchesDate && matchesTimeRange;
   });
 
   const statusConfig = {
     entregado: { label: 'Entregado', color: 'text-green-600', bgColor: 'bg-green-100', borderColor: 'border-green-500' },
     pendiente: { label: 'Pendiente', color: 'text-yellow-600', bgColor: 'bg-yellow-100', borderColor: 'border-yellow-500' },
+    enviado: { label: 'Enviado', color: 'text-blue-600', bgColor: 'bg-blue-100', borderColor: 'border-blue-500' },
     cancelado: { label: 'Cancelado', color: 'text-red-600', bgColor: 'bg-red-100', borderColor: 'border-red-500' },
   };
 
@@ -50,10 +75,11 @@ export function Orders() {
     all: orders.length,
     entregado: orders.filter(o => o.status === 'entregado').length,
     pendiente: orders.filter(o => o.status === 'pendiente').length,
+    enviado: orders.filter(o => o.status === 'enviado').length,
     cancelado: orders.filter(o => o.status === 'cancelado').length,
   };
 
-  const handleStatusChange = async (orderId: string, newStatus: 'entregado' | 'pendiente' | 'cancelado') => {
+  const handleStatusChange = async (orderId: string, newStatus: 'entregado' | 'pendiente' | 'cancelado' | 'enviado') => {
     try {
       await updateOrderStatus(orderId, newStatus);
 
@@ -85,6 +111,41 @@ export function Orders() {
       <div className="mb-8 text-center">
         <h3 className="text-3xl tracking-wider mb-1">Pedidos</h3>
         <p className="text-sm opacity-60">Lista de pedidos</p>
+      </div>
+
+      {/* Summary - Moved to top */}
+      <div className="mb-6 grid grid-cols-3 gap-6">
+        <div className="bg-white p-6 border border-black/10 shadow-sm">
+          <p className="text-sm opacity-60 mb-2">
+            {timeRange === 'all' ? 'Total de Pedidos' :
+              timeRange === '24h' ? 'Pedidos hace 24 horas' :
+                timeRange === '3d' ? 'Pedidos hace 3 días' :
+                  'Pedidos hace 7 días'}
+          </p>
+          <h4 className="text-2xl tracking-wider">{filteredOrders.length}</h4>
+        </div>
+        <div className="bg-white p-6 border border-black/10 shadow-sm">
+          <p className="text-sm opacity-60 mb-2">
+            {timeRange === 'all' ? 'Ingresos Totales' :
+              timeRange === '24h' ? 'Ingresos hace 24 horas' :
+                timeRange === '3d' ? 'Ingresos hace 3 días' :
+                  'Ingresos hace 7 días'}
+          </p>
+          <h4 className="text-2xl tracking-wider">
+            ${filteredOrders.reduce((sum, order) => sum + order.total, 0).toLocaleString('es-MX')}
+          </h4>
+        </div>
+        <div className="bg-white p-6 border border-black/10 shadow-sm">
+          <p className="text-sm opacity-60 mb-2">
+            {timeRange === 'all' ? 'Artículos Vendidos' :
+              timeRange === '24h' ? 'Artículos hace 24 horas' :
+                timeRange === '3d' ? 'Artículos hace 3 días' :
+                  'Artículos hace 7 días'}
+          </p>
+          <h4 className="text-2xl tracking-wider">
+            {filteredOrders.reduce((sum, order) => sum + order.quantity, 0)}
+          </h4>
+        </div>
       </div>
 
       {/* Filters */}
@@ -129,6 +190,52 @@ export function Orders() {
               placeholder="Estado"
               className="pl-8"
             />
+          </div>
+        </div>
+
+        {/* Time Range Filter */}
+        <div className="mt-4 pt-4 border-t border-black/10">
+          <div className="flex items-center gap-3">
+            <Clock className="w-5 h-5 opacity-60" />
+            <span className="text-sm opacity-60 tracking-wider">RANGO DE TIEMPO:</span>
+            <div className="flex gap-2 flex-1">
+              <button
+                onClick={() => setTimeRange('all')}
+                className={`px-4 py-2 text-sm tracking-wider transition-all ${timeRange === 'all'
+                  ? 'bg-black text-white'
+                  : 'bg-white border border-black/20 hover:bg-neutral-50'
+                  }`}
+              >
+                Todos
+              </button>
+              <button
+                onClick={() => setTimeRange('24h')}
+                className={`px-4 py-2 text-sm tracking-wider transition-all ${timeRange === '24h'
+                  ? 'bg-black text-white'
+                  : 'bg-white border border-black/20 hover:bg-neutral-50'
+                  }`}
+              >
+                Últimas 24h
+              </button>
+              <button
+                onClick={() => setTimeRange('3d')}
+                className={`px-4 py-2 text-sm tracking-wider transition-all ${timeRange === '3d'
+                  ? 'bg-black text-white'
+                  : 'bg-white border border-black/20 hover:bg-neutral-50'
+                  }`}
+              >
+                Últimos 3 días
+              </button>
+              <button
+                onClick={() => setTimeRange('7d')}
+                className={`px-4 py-2 text-sm tracking-wider transition-all ${timeRange === '7d'
+                  ? 'bg-black text-white'
+                  : 'bg-white border border-black/20 hover:bg-neutral-50'
+                  }`}
+              >
+                Últimos 7 días
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -189,6 +296,61 @@ export function Orders() {
                     <p className="text-sm opacity-60 mb-1">Status:</p>
                     <p className={`text-xl ${config.color}`}>{config.label}</p>
                   </div>
+
+                  {/* Status Control Buttons */}
+                  <div className="flex items-center justify-end gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => handleStatusChange(order.id, 'entregado')}
+                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg"
+                      style={{
+                        backgroundColor: order.status === 'entregado' ? 'rgb(34, 197, 94)' : '#dcfce7',
+                        color: order.status === 'entregado' ? '#ffffff' : 'rgb(34, 197, 94)',
+                        transform: order.status === 'entregado' ? 'scale(1.1)' : 'scale(1)'
+                      }}
+                      title="Marcar como entregado"
+                    >
+                      <Check className="w-5 h-5" />
+                    </button>
+
+                    <button
+                      onClick={() => handleStatusChange(order.id, 'pendiente')}
+                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg"
+                      style={{
+                        backgroundColor: order.status === 'pendiente' ? 'rgb(234, 179, 8)' : '#fef9c3',
+                        color: order.status === 'pendiente' ? '#ffffff' : 'rgb(234, 179, 8)',
+                        transform: order.status === 'pendiente' ? 'scale(1.1)' : 'scale(1)'
+                      }}
+                      title="Marcar como pendiente"
+                    >
+                      <AlertTriangle className="w-5 h-5" />
+                    </button>
+
+                    <button
+                      onClick={() => handleStatusChange(order.id, 'enviado')}
+                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg"
+                      style={{
+                        backgroundColor: order.status === 'enviado' ? 'rgb(59, 130, 246)' : '#dbeafe',
+                        color: order.status === 'enviado' ? '#ffffff' : 'rgb(59, 130, 246)',
+                        transform: order.status === 'enviado' ? 'scale(1.1)' : 'scale(1)'
+                      }}
+                      title="Marcar como enviado"
+                    >
+                      <Truck className="w-5 h-5" />
+                    </button>
+
+                    <button
+                      onClick={() => handleStatusChange(order.id, 'cancelado')}
+                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg"
+                      style={{
+                        backgroundColor: order.status === 'cancelado' ? 'rgb(239, 68, 68)' : '#fee2e2',
+                        color: order.status === 'cancelado' ? '#ffffff' : 'rgb(239, 68, 68)',
+                        transform: order.status === 'cancelado' ? 'scale(1.1)' : 'scale(1)'
+                      }}
+                      title="Marcar como cancelado"
+                    >
+                      <XCircle className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -203,25 +365,7 @@ export function Orders() {
         </div>
       )}
 
-      {/* Summary */}
-      <div className="mt-8 grid grid-cols-3 gap-6">
-        <div className="bg-white p-6 border border-black/10">
-          <p className="text-sm opacity-60 mb-2">Total de Pedidos</p>
-          <h4 className="text-2xl tracking-wider">{filteredOrders.length}</h4>
-        </div>
-        <div className="bg-white p-6 border border-black/10">
-          <p className="text-sm opacity-60 mb-2">Ingresos Totales</p>
-          <h4 className="text-2xl tracking-wider">
-            ${filteredOrders.reduce((sum, order) => sum + order.total, 0).toLocaleString('es-MX')}
-          </h4>
-        </div>
-        <div className="bg-white p-6 border border-black/10">
-          <p className="text-sm opacity-60 mb-2">Artículos Vendidos</p>
-          <h4 className="text-2xl tracking-wider">
-            {filteredOrders.reduce((sum, order) => sum + order.quantity, 0)}
-          </h4>
-        </div>
-      </div>
+
 
       {/* Order Detail Modal */}
       {selectedOrder && (

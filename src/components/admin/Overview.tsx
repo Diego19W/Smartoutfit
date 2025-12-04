@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { DollarSign, Package, AlertTriangle, Briefcase, Check, XCircle, ChevronUp, ChevronDown } from "lucide-react";
+import { DollarSign, Package, AlertTriangle, Briefcase, Check, XCircle, ChevronUp, ChevronDown, Truck, Clock } from "lucide-react";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { getOrders, getAllProducts, updateOrderStatus, updateProduct, Order, Product } from "../../utils/database";
 
@@ -15,6 +16,7 @@ export function Overview() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState<'all' | 'month' | 'week'>('all');
 
   useEffect(() => {
     loadData();
@@ -45,7 +47,7 @@ export function Overview() {
 
   const lowStockCount = products.filter(p => (p.stock || 0) < 10).length;
 
-  const handleOrderStatusChange = async (orderId: string, newStatus: 'entregado' | 'pendiente' | 'cancelado') => {
+  const handleOrderStatusChange = async (orderId: string, newStatus: 'entregado' | 'pendiente' | 'cancelado' | 'enviado') => {
     try {
       await updateOrderStatus(orderId, newStatus);
       setOrders(orders.map(order =>
@@ -110,8 +112,49 @@ export function Overview() {
   return (
     <div>
       <div className="mb-8">
-        <h3 className="tracking-wider text-2xl mb-1">RESUMEN</h3>
+        <h3 className="tracking-wider text-2xl mb-1">
+          {timeRange === 'all' ? 'RESUMEN' :
+            timeRange === 'month' ? 'RESUMEN DEL MES' :
+              'RESUMEN DE LA SEMANA'}
+        </h3>
         <p className="text-sm opacity-60">Vista general del inventario</p>
+      </div>
+
+      {/* Time Range Filter */}
+      <div className="bg-white border border-black/10 p-4 mb-6 rounded-lg">
+        <div className="flex items-center gap-2">
+          <Clock className="w-5 h-5 opacity-60" />
+          <span className="text-sm opacity-60 tracking-wider mr-4">PERÍODO:</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setTimeRange('all')}
+              className={`px-4 py-2 text-sm tracking-wider transition-all ${timeRange === 'all'
+                ? 'bg-black text-white'
+                : 'bg-white border border-black/20 hover:bg-neutral-50'
+                }`}
+            >
+              Todo
+            </button>
+            <button
+              onClick={() => setTimeRange('month')}
+              className={`px-4 py-2 text-sm tracking-wider transition-all ${timeRange === 'month'
+                ? 'bg-black text-white'
+                : 'bg-white border border-black/20 hover:bg-neutral-50'
+                }`}
+            >
+              Este Mes
+            </button>
+            <button
+              onClick={() => setTimeRange('week')}
+              className={`px-4 py-2 text-sm tracking-wider transition-all ${timeRange === 'week'
+                ? 'bg-black text-white'
+                : 'bg-white border border-black/20 hover:bg-neutral-50'
+                }`}
+            >
+              Esta Semana
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -166,39 +209,56 @@ export function Overview() {
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="tracking-wider">${order.total} MX</span>
-                  <span className={`px-3 py-1 text-xs rounded ${order.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                  <span className={`px - 3 py - 1 text - xs rounded ${order.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
                     order.status === 'entregado' ? 'bg-green-100 text-green-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
+                      order.status === 'enviado' ? 'bg-blue-100 text-blue-800' :
+                        'bg-red-100 text-red-800'
+                    } `}>
                     <span className="capitalize">{order.status}</span>
                   </span>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleOrderStatusChange(order.id, 'entregado')}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${order.status === 'entregado'
+                      className={`w - 10 h - 10 rounded - full flex items - center justify - center transition - all ${order.status === 'entregado'
                         ? 'bg-green-500 text-white shadow-lg scale-110'
                         : 'bg-green-100 text-green-600 hover:bg-green-200'
-                        }`}
+                        } `}
                       title="Entregado"
                     >
                       <Check className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleOrderStatusChange(order.id, 'pendiente')}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${order.status === 'pendiente'
-                        ? 'bg-yellow-500 text-white shadow-lg scale-110'
-                        : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
-                        }`}
+                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg"
+                      style={{
+                        backgroundColor: order.status === 'pendiente' ? 'rgb(234, 179, 8)' : '#fef9c3',
+                        color: order.status === 'pendiente' ? '#ffffff' : 'rgb(234, 179, 8)',
+                        transform: order.status === 'pendiente' ? 'scale(1.1)' : 'scale(1)'
+                      }}
                       title="Pendiente"
                     >
                       <AlertTriangle className="w-5 h-5" />
                     </button>
                     <button
+                      onClick={() => handleOrderStatusChange(order.id, 'enviado')}
+                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg"
+                      style={{
+                        backgroundColor: order.status === 'enviado' ? '#2563eb' : '#dbeafe',
+                        color: order.status === 'enviado' ? '#ffffff' : '#2563eb',
+                        transform: order.status === 'enviado' ? 'scale(1.1)' : 'scale(1)'
+                      }}
+                      title="Enviado"
+                    >
+                      <Truck className="w-5 h-5" />
+                    </button>
+                    <button
                       onClick={() => handleOrderStatusChange(order.id, 'cancelado')}
-                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${order.status === 'cancelado'
-                        ? 'bg-red-500 text-white shadow-lg scale-110'
-                        : 'bg-red-100 text-red-600 hover:bg-red-200'
-                        }`}
+                      className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg"
+                      style={{
+                        backgroundColor: order.status === 'cancelado' ? 'rgb(239, 68, 68)' : '#fee2e2',
+                        color: order.status === 'cancelado' ? '#ffffff' : 'rgb(239, 68, 68)',
+                        transform: order.status === 'cancelado' ? 'scale(1.1)' : 'scale(1)'
+                      }}
                       title="Cancelado"
                     >
                       <XCircle className="w-5 h-5" />
@@ -229,7 +289,7 @@ export function Overview() {
                 // @ts-ignore
                 .filter(size => sizeStock[size] > 0)
                 // @ts-ignore
-                .map(size => `${size}: ${sizeStock[size]}`)
+                .map(size => `${size}: ${sizeStock[size]} `)
                 .join(', ') || 'Sin stock';
 
               return (

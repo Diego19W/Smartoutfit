@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
-  Bell,
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  BarChart3,
   Home
 } from "lucide-react";
 import { Overview } from "./admin/Overview";
@@ -29,50 +29,45 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             <h2 className="tracking-[0.2em]">DASHBOARD</h2>
             <p className="text-sm opacity-60 mt-1">Panel Administrativo</p>
           </div>
-          
+
           <nav className="p-4 space-y-2">
             <button
               onClick={() => setActiveTab('overview')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded transition-colors ${
-                activeTab === 'overview' ? 'bg-black text-white' : 'hover:bg-neutral-100'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded transition-colors ${activeTab === 'overview' ? 'bg-black text-white' : 'hover:bg-neutral-100'
+                }`}
             >
               <LayoutDashboard className="w-5 h-5" />
               <span className="tracking-wider text-sm">Resumen</span>
             </button>
-            
+
             <button
               onClick={() => setActiveTab('inventory')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded transition-colors ${
-                activeTab === 'inventory' ? 'bg-black text-white' : 'hover:bg-neutral-100'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded transition-colors ${activeTab === 'inventory' ? 'bg-black text-white' : 'hover:bg-neutral-100'
+                }`}
             >
               <Package className="w-5 h-5" />
               <span className="tracking-wider text-sm">Inventario</span>
             </button>
-            
+
             <button
               onClick={() => setActiveTab('orders')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded transition-colors ${
-                activeTab === 'orders' ? 'bg-black text-white' : 'hover:bg-neutral-100'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded transition-colors ${activeTab === 'orders' ? 'bg-black text-white' : 'hover:bg-neutral-100'
+                }`}
             >
               <ShoppingCart className="w-5 h-5" />
               <span className="tracking-wider text-sm">Pedidos</span>
             </button>
-            
+
             <button
               onClick={() => setActiveTab('notifications')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded transition-colors relative ${
-                activeTab === 'notifications' ? 'bg-black text-white' : 'hover:bg-neutral-100'
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded transition-colors ${activeTab === 'notifications' ? 'bg-black text-white' : 'hover:bg-neutral-100'
+                }`}
             >
-              <Bell className="w-5 h-5" />
-              <span className="tracking-wider text-sm">Notificaciones</span>
-              <span className="absolute right-4 top-3 w-2 h-2 bg-red-500 rounded-full"></span>
+              <BarChart3 className="w-5 h-5" />
+              <span className="tracking-wider text-sm">Análisis</span>
             </button>
           </nav>
-          
+
           {/* Return to Home Button */}
           <div className="absolute bottom-0 inset-x-0 p-4 border-t border-black/10 bg-white">
             <button
