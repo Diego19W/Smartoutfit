@@ -3,28 +3,25 @@ import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Heart, Search } from "lucide-react";
 import { CustomSelect } from "./CustomSelect";
 import { ProductDetail } from "./ProductDetail";
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  image: string;
-  category: string;
-  gender: string;
-}
+import { useCart } from "../context/CartContext";
+import { useFavorites } from "../context/FavoritesContext";
+import { Product } from "../utils/database";
 
 interface CategoryPageProps {
   title: string;
   genderFilter?: string; // 'hombre' | 'mujer'
+  onNavigate: (page: string) => void;
 }
 
-export function CategoryPage({ title, genderFilter }: CategoryPageProps) {
+export function CategoryPage({ title, genderFilter, onNavigate }: CategoryPageProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
   const [showProductDetail, setShowProductDetail] = useState(false);
+  const { addToCart } = useCart();
+  const { toggleFavorite, isFavorite } = useFavorites();
 
   useEffect(() => {
     fetchProducts();
@@ -73,8 +70,15 @@ export function CategoryPage({ title, genderFilter }: CategoryPageProps) {
     setShowProductDetail(true);
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (product: Product, size: string, quantity: number) => {
+    addToCart(product, size, quantity);
     setShowProductDetail(false);
+    alert("Producto añadido al carrito");
+  };
+
+  const handleBuyNow = () => {
+    setShowProductDetail(false);
+    onNavigate('cart');
   };
 
   return (
@@ -118,7 +122,7 @@ export function CategoryPage({ title, genderFilter }: CategoryPageProps) {
         {loading ? (
           <div className="text-center py-12">Cargando productos...</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-8">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
@@ -132,20 +136,23 @@ export function CategoryPage({ title, genderFilter }: CategoryPageProps) {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <button
-                    className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className={`absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center transition-opacity ${isFavorite(product.id) ? 'opacity-100 text-red-500' : 'opacity-0 group-hover:opacity-100'
+                      }`}
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Agregar a favoritos
+                      toggleFavorite(product.id);
                     }}
                   >
-                    <Heart className="w-5 h-5" />
+                    <Heart className={`w-5 h-5 ${isFavorite(product.id) ? 'fill-current' : ''}`} />
                   </button>
                   <div className="absolute inset-x-0 bottom-0 bg-white/95 backdrop-blur-sm py-3 px-4 translate-y-full group-hover:translate-y-0 transition-transform">
                     <button
                       className="w-full bg-black text-white py-2 text-sm tracking-wider hover:bg-black/80 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleProductClick(product.id);
+                        // Add to cart with default size M and quantity 1 
+                        addToCart(products.find(p => p.id === product.id)!, 'M', 1);
+                        alert("Producto añadido al carrito");
                       }}
                     >
                       AÑADIR AL CARRITO
@@ -163,11 +170,12 @@ export function CategoryPage({ title, genderFilter }: CategoryPageProps) {
         )}
 
         {/* Product Detail Modal */}
-        {showProductDetail && selectedProduct !== null && (
+        {showProductDetail && selectedProduct !== null && products.find(p => p.id === selectedProduct) && (
           <ProductDetail
             product={products.find(p => p.id === selectedProduct)!}
             onClose={() => setShowProductDetail(false)}
             onAddToCart={handleAddToCart}
+            onBuyNow={handleBuyNow}
           />
         )}
       </div>

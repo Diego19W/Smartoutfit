@@ -8,9 +8,10 @@ interface ProductDetailProps {
   product: Product;
   onClose: () => void;
   onAddToCart: (product: Product, size: string, quantity: number) => void;
+  onBuyNow: () => void;
 }
 
-export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailProps) {
+export function ProductDetail({ product, onClose, onAddToCart, onBuyNow }: ProductDetailProps) {
   const [selectedSize, setSelectedSize] = useState("M");
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -79,7 +80,7 @@ export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailPr
               <h2 className="text-4xl tracking-tight mb-2">
                 {product.name}
               </h2>
-              <p className="text-sm opacity-60 tracking-wider">SKU: MODAIX-{product.id.toString().padStart(4, '0')}</p>
+              <p className="text-sm opacity-60 tracking-wider">SKU: SMARTOUTFIT-{product.id.toString().padStart(4, '0')}</p>
             </div>
 
             {/* Specifications */}
@@ -196,23 +197,46 @@ export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailPr
               </p>
             </div>
 
-            {/* Add to Cart Button */}
-            <button
-              onClick={handleAddToCart}
-              disabled={(() => {
-                const sizeKey = selectedSize as keyof typeof product.sizeStock;
-                const availableStock = product.sizeStock?.[sizeKey] || 0;
-                return availableStock === 0;
-              })()}
-              className="w-full bg-yellow-400 hover:bg-yellow-500 text-black py-4 tracking-widest transition-colors flex items-center justify-center gap-2 shadow-lg disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              {(() => {
-                const sizeKey = selectedSize as keyof typeof product.sizeStock;
-                const availableStock = product.sizeStock?.[sizeKey] || 0;
-                return availableStock === 0 ? 'SIN STOCK' : 'COMPRAR';
-              })()}
-            </button>
+            {/* Action Buttons */}
+            <div className="grid grid-cols-[3fr_2fr] gap-3">
+              {/* Agregar al Carrito - 3/5 width */}
+              <button
+                onClick={handleAddToCart}
+                disabled={(() => {
+                  const sizeKey = selectedSize as keyof typeof product.sizeStock;
+                  const availableStock = product.sizeStock?.[sizeKey] || 0;
+                  return availableStock === 0;
+                })()}
+                className="bg-yellow-400 hover:bg-yellow-500 text-black py-4 tracking-widest transition-colors flex items-center justify-center gap-2 shadow-lg disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed"
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {(() => {
+                  const sizeKey = selectedSize as keyof typeof product.sizeStock;
+                  const availableStock = product.sizeStock?.[sizeKey] || 0;
+                  return availableStock === 0 ? 'SIN STOCK' : 'AGREGAR AL CARRITO';
+                })()}
+              </button>
+
+              {/* Comprar - 2/5 width */}
+              <button
+                onClick={() => {
+                  handleAddToCart();
+                  onBuyNow();
+                }}
+                disabled={(() => {
+                  const sizeKey = selectedSize as keyof typeof product.sizeStock;
+                  const availableStock = product.sizeStock?.[sizeKey] || 0;
+                  return availableStock === 0;
+                })()}
+                className="bg-yellow-250 hover:bg-yellow-300 text-black py-4 tracking-widest transition-colors flex items-center justify-center gap-2 shadow-lg disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed"
+              >
+                {(() => {
+                  const sizeKey = selectedSize as keyof typeof product.sizeStock;
+                  const availableStock = product.sizeStock?.[sizeKey] || 0;
+                  return availableStock === 0 ? 'SIN STOCK' : 'COMPRAR';
+                })()}
+              </button>
+            </div>
 
             {/* Secondary Actions */}
             <div className="grid grid-cols-2 gap-3">
@@ -228,7 +252,18 @@ export function ProductDetail({ product, onClose, onAddToCart }: ProductDetailPr
                   {isFavorite(product.id) ? 'GUARDADO' : 'FAVORITOS'}
                 </span>
               </button>
-              <button className="flex items-center justify-center gap-2 py-3 border-2 border-black/20 hover:bg-black hover:text-white transition-colors">
+              <button
+                onClick={() => {
+                  // Copy product URL to clipboard
+                  const productUrl = `${window.location.origin}?product=${product.id}`;
+                  navigator.clipboard.writeText(productUrl).then(() => {
+                    alert('Enlace copiado al portapapeles');
+                  }).catch(() => {
+                    alert('No se pudo copiar el enlace');
+                  });
+                }}
+                className="flex items-center justify-center gap-2 py-3 border-2 border-black/20 hover:bg-black hover:text-white transition-colors"
+              >
                 <Share2 className="w-5 h-5" />
                 <span className="tracking-wider text-sm">COMPARTIR</span>
               </button>

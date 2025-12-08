@@ -2,9 +2,13 @@
 $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
 header("Access-Control-Allow-Origin: $origin");
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With, Pragma, Cache-Control");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Max-Age: 3600");
+header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 header("Access-Control-Allow-Credentials: true");
+
+// Set timezone for all date operations
+date_default_timezone_set('America/Mexico_City');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -109,38 +113,47 @@ function createOrder($pdo) {
             error_log("Updated user info for ID: $id_usuario");
         }
 
-        // 3. Validate Stock
+        // 3. Validate Stock and Prepare Email Items
+        $emailItems = [];
         foreach ($data->items as $item) {
-            // Get current product stock
-            $checkStockSql = "SELECT stock_talla FROM productos WHERE id_producto = :id_producto";
+            // Get current product stock and name from stock table joined with products
+            $checkStockSql = "SELECT s.stock, p.nombre FROM stock s JOIN productos p ON s.id_producto = p.id_producto WHERE s.id_producto = :id_producto AND s.talla = :talla";
             $checkStmt = $pdo->prepare($checkStockSql);
-            $checkStmt->bindValue(':id_producto', $item->productId);
-            $checkStmt->execute();
-            $product = $checkStmt->fetch(PDO::FETCH_ASSOC);
+            $checkStmt->execute([
+                ':id_producto' => $item->productId,
+                ':talla' => $item->size
+            ]);
+            $stockRow = $checkStmt->fetch(PDO::FETCH_ASSOC);
             
-            if (!$product) {
-                throw new Exception("Producto no encontrado: {$item->productId}");
+            if (!$stockRow) {
+                throw new Exception("Producto no encontrado: {$item->productId} talla {$item->size}");
             }
             
-            $sizeStock = json_decode($product['stock_talla'], true);
-            $availableStock = $sizeStock[$item->size] ?? 0;
+            $availableStock = (int)$stockRow['stock'];
             
             if ($availableStock < $item->quantity) {
                 throw new Exception("Stock insuficiente para {$item->size}. Disponible: {$availableStock}, Solicitado: {$item->quantity}");
             }
+
+            // Add to email items
+            $emailItems[] = [
+                'name' => $stockRow['nombre'],
+                'size' => $item->size,
+                'quantity' => $item->quantity,
+                'price' => $item->price
+            ];
         }
 
         $numero_orden = 'ORD-' . time() . '-' . rand(100, 999);
         $id_transaccion = 'TR-' . time() . '-' . rand(1000, 9999);
         $fecha_compra = date('Y-m-d H:i:s');
+        
+        // Calculate shipping: $200 if total < $2000, otherwise free
+        $envio = $data->total < 2000 ? 200 : 0;
 
         // 4. Insert Order Items
-        $sql = "INSERT INTO compras (id_usuario, id_producto, cantidad, total, fecha_compra, numero_orden, id_transaccion, estado, talla) VALUES (:id_usuario, :id_producto, :cantidad, :total, :fecha_compra, :numero_orden, :id_transaccion, :estado, :talla)";
+        $sql = "INSERT INTO compras (id_usuario, id_producto, cantidad, total, envio, fecha_compra, numero_orden, id_transaccion, estado, talla) VALUES (:id_usuario, :id_producto, :cantidad, :total, :envio, :fecha_compra, :numero_orden, :id_transaccion, :estado, :talla)";
         $stmt = $pdo->prepare($sql);
-
-        // Update stock for each item
-        $updateStockSql = "UPDATE productos SET stock_talla = :stock_talla, stock = :total_stock WHERE id_producto = :id_producto";
-        $updateStmt = $pdo->prepare($updateStockSql);
 
         foreach ($data->items as $item) {
             // Insert order
@@ -148,6 +161,7 @@ function createOrder($pdo) {
             $stmt->bindValue(':id_producto', $item->productId);
             $stmt->bindValue(':cantidad', $item->quantity);
             $stmt->bindValue(':total', $item->price * $item->quantity);
+            $stmt->bindValue(':envio', $envio);
             $stmt->bindValue(':fecha_compra', $fecha_compra);
             $stmt->bindValue(':numero_orden', $numero_orden);
             $stmt->bindValue(':id_transaccion', $id_transaccion);
@@ -155,31 +169,14 @@ function createOrder($pdo) {
             $stmt->bindValue(':talla', $item->size);
             $stmt->execute();
             
-            // Update stock
-            $getStockSql = "SELECT stock_talla FROM productos WHERE id_producto = :id_producto";
-            $getStockStmt = $pdo->prepare($getStockSql);
-            $getStockStmt->bindValue(':id_producto', $item->productId);
-            $getStockStmt->execute();
-            $productData = $getStockStmt->fetch(PDO::FETCH_ASSOC);
-            
-            $sizeStock = json_decode($productData['stock_talla'], true);
-            $sizeStock[$item->size] = max(0, ($sizeStock[$item->size] ?? 0) - $item->quantity);
-            
-            // Calculate total stock
-            $totalStock = array_sum($sizeStock);
-            
-            $updateStmt->bindValue(':stock_talla', json_encode($sizeStock));
-            $updateStmt->bindValue(':total_stock', $totalStock);
-            $updateStmt->bindValue(':id_producto', $item->productId);
-            $updateStmt->execute();
-
-            // Update separate 'stock' table
+            // Update stock in stock table
             $updateStockTableSql = "UPDATE stock SET stock = GREATEST(0, stock - :cantidad) WHERE id_producto = :id_producto AND talla = :talla";
             $updateStockTableStmt = $pdo->prepare($updateStockTableSql);
-            $updateStockTableStmt->bindValue(':cantidad', $item->quantity);
-            $updateStockTableStmt->bindValue(':id_producto', $item->productId);
-            $updateStockTableStmt->bindValue(':talla', $item->size);
-            $updateStockTableStmt->execute();
+            $updateStockTableStmt->execute([
+                ':cantidad' => $item->quantity,
+                ':id_producto' => $item->productId,
+                ':talla' => $item->size
+            ]);
         }
 
         // 5. Handle Points Redemption and Rewards
@@ -220,6 +217,40 @@ function createOrder($pdo) {
         }
 
         $pdo->commit();
+
+        // Send Confirmation Email
+        require_once __DIR__ . '/email_helper.php';
+        
+        // Determine customer email and name
+        $customerEmail = $data->customer->email ?? null;
+        $customerName = ($data->customer->firstName ?? '') . ' ' . ($data->customer->lastName ?? '');
+        
+        // If user is logged in but customer data is missing in payload (shouldn't happen with current frontend), fetch from DB
+        if (!$customerEmail && $id_usuario) {
+             $userStmt = $pdo->prepare("SELECT email, nombre FROM usuarios WHERE id = :id");
+             $userStmt->execute([':id' => $id_usuario]);
+             $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
+             $customerEmail = $userRow['email'];
+             $customerName = $userRow['nombre'];
+        }
+
+        if ($customerEmail) {
+            $orderData = [
+                'numero_orden' => $numero_orden,
+                'fecha_compra' => $fecha_compra,
+                'customer_name' => $customerName,
+                'items' => $emailItems,
+                'shipping' => $envio,
+                'total' => $finalTotal
+            ];
+            
+            // Attempt to send email, log error if fails but don't fail the order
+            if (!sendOrderConfirmationEmail($customerEmail, $orderData)) {
+                error_log("Failed to send confirmation email to $customerEmail");
+            } else {
+                error_log("Confirmation email sent to $customerEmail");
+            }
+        }
         
         echo json_encode([
             "message" => "Order created successfully and stock updated",
@@ -245,6 +276,8 @@ function getOrders($pdo) {
     try {
         // Fetch orders from 'compras' table joined with 'productos'
         // Use user_id from GET parameter, or fall back to session
+        // If action=all is passed, fetch ALL orders (for admin)
+        $action = isset($_GET['action']) ? $_GET['action'] : null;
         $userId = isset($_GET['user_id']) ? $_GET['user_id'] : (isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null);
         
         $sql = "SELECT 
@@ -255,13 +288,15 @@ function getOrders($pdo) {
                     c.cantidad as quantity,
                     c.fecha_compra as date,
                     c.total,
+                    c.envio,
                     c.estado as status,
                     'Tarjeta' as paymentMethod,
                     c.talla as size
                 FROM compras c
                 JOIN productos p ON c.id_producto = p.id_producto";
         
-        if ($userId) {
+        // Only filter by user if action is not 'all' (admin mode)
+        if ($action !== 'all' && $userId) {
             $sql .= " WHERE c.id_usuario = :user_id";
         }
         
@@ -269,7 +304,7 @@ function getOrders($pdo) {
                 
         $stmt = $pdo->prepare($sql);
         
-        if ($userId) {
+        if ($action !== 'all' && $userId) {
             $stmt->bindValue(':user_id', $userId);
         }
         
@@ -288,6 +323,7 @@ function getOrders($pdo) {
                 'quantity' => (int)$order['quantity'],
                 'date' => $order['date'],
                 'total' => (float)$order['total'],
+                'shipping' => (float)($order['envio'] ?? 0),
                 'status' => $order['status'] ?? 'pendiente',
                 'paymentMethod' => $order['paymentMethod'],
                 'items' => [
@@ -321,20 +357,66 @@ function updateOrderStatus($pdo) {
     }
 
     try {
-        $sql = "UPDATE compras SET estado = :status WHERE id_compra = :id";
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':status', $data->status);
-        $stmt->bindParam(':id', $data->id);
+        $pdo->beginTransaction();
 
-        if ($stmt->execute()) {
-            echo json_encode(["message" => "Order status updated"]);
-        } else {
-            http_response_code(503);
-            echo json_encode(["message" => "Unable to update order status"]);
+        // Get current order status and details
+        $sql = "SELECT estado, id_producto, talla, cantidad 
+                FROM compras 
+                WHERE id_compra = :id";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':id' => $data->id]);
+        $order = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$order) {
+            throw new Exception("Order not found");
         }
+
+        $oldStatus = $order['estado'];
+        $newStatus = $data->status;
+        $stockReturned = false;
+
+        // If changing to "cancelado" - return stock
+        if ($newStatus === 'cancelado' && $oldStatus !== 'cancelado') {
+            // Return stock to inventory using the stock table
+            $updateStockSql = "UPDATE stock 
+                              SET stock = stock + :cantidad 
+                              WHERE id_producto = :id_producto 
+                              AND talla = :talla";
+            $updateStmt = $pdo->prepare($updateStockSql);
+            $updateStmt->execute([
+                ':cantidad' => $order['cantidad'],
+                ':id_producto' => $order['id_producto'],
+                ':talla' => $order['talla']
+            ]);
+
+            $stockReturned = true;
+            error_log("Stock returned: Product {$order['id_producto']}, Size {$order['talla']}, Quantity {$order['cantidad']}");
+        }
+
+        // Update order status
+        $updateSql = "UPDATE compras SET estado = :status WHERE id_compra = :id";
+        $updateStmt = $pdo->prepare($updateSql);
+        $updateStmt->execute([
+            ':status' => $newStatus,
+            ':id' => $data->id
+        ]);
+
+        $pdo->commit();
+        
+        echo json_encode([
+            "message" => "Order status updated",
+            "stockReturned" => $stockReturned
+        ]);
+
     } catch (PDOException $e) {
+        $pdo->rollBack();
         http_response_code(500);
+        error_log("Error updating order status: " . $e->getMessage());
         echo json_encode(["message" => "Error updating order: " . $e->getMessage()]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(["message" => $e->getMessage()]);
     }
 }
 ?>

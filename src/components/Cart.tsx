@@ -3,6 +3,8 @@ import { Trash2, Plus, Minus, Tag, ShoppingBag, Gift } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useState, useEffect } from "react";
+import { getAllProducts, Product } from "../utils/database";
+import { ProductCard } from "./figma/ProductCard";
 
 interface CartProps {
   onNavigate: (page: string) => void;
@@ -13,6 +15,7 @@ export function Cart({ onNavigate }: CartProps) {
   const { user } = useAuth();
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const [pointsInput, setPointsInput] = useState("");
+  const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
 
   // Load redeemed points from localStorage
   useEffect(() => {
@@ -20,6 +23,17 @@ export function Cart({ onNavigate }: CartProps) {
     if (savedPoints) {
       setPointsToRedeem(parseInt(savedPoints));
     }
+  }, []);
+
+  // Load random products for recommendations
+  useEffect(() => {
+    const loadRecommendedProducts = async () => {
+      const allProducts = await getAllProducts();
+      // Shuffle and take 4 random products
+      const shuffled = allProducts.sort(() => 0.5 - Math.random());
+      setRecommendedProducts(shuffled.slice(0, 4));
+    };
+    loadRecommendedProducts();
   }, []);
 
   // Save redeemed points to localStorage
@@ -84,6 +98,12 @@ export function Cart({ onNavigate }: CartProps) {
                         <div>
                           <h4 className="tracking-wider mb-1">{item.name}</h4>
                           <p className="text-sm opacity-60">Talla: {item.selectedSize}</p>
+                          {/* Show available stock */}
+                          {item.sizeStock && (
+                            <p className="text-xs mt-1 opacity-50">
+                              Stock disponible: {item.sizeStock[item.selectedSize as keyof typeof item.sizeStock]}
+                            </p>
+                          )}
                         </div>
                         <button
                           onClick={() => removeFromCart(item.id, item.selectedSize)}
@@ -104,14 +124,33 @@ export function Cart({ onNavigate }: CartProps) {
                           <span className="w-8 text-center">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.id, item.selectedSize, item.quantity + 1)}
-                            className="w-8 h-8 border border-black/20 flex items-center justify-center hover:bg-neutral-100 transition-colors"
+                            disabled={
+                              item.sizeStock
+                                ? item.quantity >= item.sizeStock[item.selectedSize as keyof typeof item.sizeStock]
+                                : false
+                            }
+                            className={`w-8 h-8 border flex items-center justify-center transition-colors ${item.sizeStock && item.quantity >= item.sizeStock[item.selectedSize as keyof typeof item.sizeStock]
+                              ? 'border-black/10 bg-neutral-100 text-neutral-400 cursor-not-allowed'
+                              : 'border-black/20 hover:bg-neutral-100'
+                              }`}
+                            title={
+                              item.sizeStock && item.quantity >= item.sizeStock[item.selectedSize as keyof typeof item.sizeStock]
+                                ? 'Stock máximo alcanzado'
+                                : 'Aumentar cantidad'
+                            }
                           >
                             <Plus className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="tracking-wider">
-                          ${(item.price * item.quantity).toLocaleString('es-MX')}
-                        </p>
+                        <div className="text-right">
+                          <p className="tracking-wider">
+                            ${(item.price * item.quantity).toLocaleString('es-MX')}
+                          </p>
+                          {/* Show warning if at max stock */}
+                          {item.sizeStock && item.quantity >= item.sizeStock[item.selectedSize as keyof typeof item.sizeStock] && (
+                            <p className="text-xs text-orange-600 mt-1">Stock máximo</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -306,7 +345,13 @@ export function Cart({ onNavigate }: CartProps) {
         <div className="mt-16">
           <h3 className="text-center tracking-[0.2em] mb-8">TAMBIÉN TE PUEDE INTERESAR</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* TODO: Conectar con productos recomendados de la base de datos */}
+            {recommendedProducts.map(product => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onNavigate={onNavigate}
+              />
+            ))}
           </div>
         </div>
       </div>

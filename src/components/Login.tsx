@@ -4,9 +4,10 @@ import { useAuth } from "../context/AuthContext";
 
 interface LoginProps {
   onNavigate: (page: string) => void;
+  redirectPage?: string;
 }
 
-export function Login({ onNavigate }: LoginProps) {
+export function Login({ onNavigate, redirectPage = 'home' }: LoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +38,7 @@ export function Login({ onNavigate }: LoginProps) {
 
       if (response.ok && data.user) {
         login(data.user);
-        onNavigate('home');
+        onNavigate(redirectPage);
       } else {
         setError(data.message || 'Credenciales inválidas');
       }
@@ -50,16 +51,45 @@ export function Login({ onNavigate }: LoginProps) {
   };
 
   const handleSocialLogin = async (provider: 'google' | 'facebook' | 'azure') => {
-    // TODO: Implementar autenticación social
-    // Ejemplo con Supabase:
-    // const { data, error } = await supabase.auth.signInWithOAuth({
-    //   provider: provider,
-    //   options: {
-    //     redirectTo: window.location.origin
-    //   }
-    // })
+    setLoading(true);
+    setError('');
 
-    console.log(`Login with ${provider}`);
+    try {
+      let result;
+
+      // Import Firebase functions dynamically
+      const { signInWithGoogle, signInWithFacebook, signInWithMicrosoft, syncFirebaseUserWithBackend, getAuthErrorMessage } = await import('../utils/authService');
+
+      // Call appropriate provider function
+      switch (provider) {
+        case 'google':
+          result = await signInWithGoogle();
+          break;
+        case 'facebook':
+          result = await signInWithFacebook();
+          break;
+        case 'azure':
+          result = await signInWithMicrosoft();
+          break;
+      }
+
+      // Sync with backend
+      const backendData = await syncFirebaseUserWithBackend(result.user);
+
+      // Login with AuthContext
+      if (backendData.user) {
+        login(backendData.user);
+        onNavigate(redirectPage);
+      }
+
+    } catch (error: any) {
+      console.error(`${provider} auth error:`, error);
+      const { getAuthErrorMessage } = await import('../utils/authService');
+      const errorMessage = getAuthErrorMessage(error);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -67,7 +97,7 @@ export function Login({ onNavigate }: LoginProps) {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl tracking-[0.3em] mb-2">MODAIX</h1>
+          <h1 className="text-4xl tracking-[0.3em] mb-2">SMARTOUTFIT</h1>
           <p className="text-sm opacity-60 tracking-wider">INICIAR SESIÓN</p>
         </div>
 

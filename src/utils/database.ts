@@ -200,6 +200,7 @@ export interface Order {
   quantity: number;
   date: string;
   total: number;
+  shipping?: number; // Shipping cost
   status: 'entregado' | 'pendiente' | 'cancelado' | 'enviado';
   paymentMethod: string;
   items: OrderItem[];
@@ -207,10 +208,15 @@ export interface Order {
 
 /**
  * Obtener todos los pedidos
+ * @param isAdmin - Si es true, obtiene TODOS los pedidos (modo admin)
  */
-export async function getOrders(): Promise<Order[]> {
+export async function getOrders(isAdmin: boolean = false): Promise<Order[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/orders.php`, {
+    const url = isAdmin
+      ? `${API_BASE_URL}/orders.php?action=all`
+      : `${API_BASE_URL}/orders.php`;
+
+    const response = await fetch(url, {
       credentials: 'include'
     });
     if (!response.ok) throw new Error('Network response was not ok');

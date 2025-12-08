@@ -45,6 +45,11 @@ export function FavoritesPage({ onNavigate }: FavoritesPageProps) {
         alert("Producto añadido al carrito");
     };
 
+    const handleBuyNow = () => {
+        setShowProductDetail(false);
+        onNavigate('cart');
+    };
+
     if (loading) {
         return <div className="py-16 text-center">Cargando favoritos...</div>;
     }
@@ -115,6 +120,7 @@ export function FavoritesPage({ onNavigate }: FavoritesPageProps) {
                         product={selectedProduct}
                         onClose={() => setShowProductDetail(false)}
                         onAddToCart={handleAddToCart}
+                        onBuyNow={handleBuyNow}
                     />
                 )}
             </div>

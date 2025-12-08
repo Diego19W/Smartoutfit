@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CheckCircle, Download, Home, Package, Printer } from "lucide-react";
 import { getOrders, Order } from "../utils/database";
+import html2pdf from 'html2pdf.js';
 
 interface ReceiptProps {
   onNavigate: (page: string) => void;
@@ -9,6 +10,7 @@ interface ReceiptProps {
 export function Receipt({ onNavigate }: ReceiptProps) {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadLatestOrder();
@@ -25,6 +27,20 @@ export function Receipt({ onNavigate }: ReceiptProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDownloadPDF = () => {
+    if (!receiptRef.current || !order) return;
+
+    const opt = {
+      margin: 10,
+      filename: `ticket-${order.orderNumber}.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+    };
+
+    html2pdf().set(opt).from(receiptRef.current).save();
   };
 
   if (loading) {
@@ -69,10 +85,10 @@ export function Receipt({ onNavigate }: ReceiptProps) {
         </div>
 
         {/* Receipt Card */}
-        <div className="border-2 border-black/10 bg-white">
+        <div ref={receiptRef} className="border-2 border-black/10 bg-white print-content">
           {/* Header */}
           <div className="bg-black text-white p-8 text-center">
-            <h3 className="text-3xl tracking-[0.3em] mb-2">MODAIX</h3>
+            <h3 className="text-3xl tracking-[0.3em] mb-2">SMARTOUTFIT</h3>
             <p className="text-sm tracking-wider opacity-70">TICKET DE COMPRA</p>
           </div>
 
@@ -85,13 +101,21 @@ export function Receipt({ onNavigate }: ReceiptProps) {
               </div>
               <div>
                 <p className="text-xs tracking-wider opacity-60 mb-1">FECHA</p>
-                <p className="tracking-wider">{new Date(order.date).toLocaleDateString('es-MX', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}</p>
+                <p className="tracking-wider">{(() => {
+                  // Manual date formatting to avoid timezone issues
+                  // order.date format: "2025-12-05 14:09:45"
+                  const [datePart, timePart] = order.date.split(' ');
+                  const [year, month, day] = datePart.split('-');
+                  const [hour, minute] = timePart.split(':');
+
+                  const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+                  const hour12 = parseInt(hour) > 12 ? parseInt(hour) - 12 : parseInt(hour);
+                  const ampm = parseInt(hour) >= 12 ? 'p.m.' : 'a.m.';
+
+                  return `${day} de ${monthNames[parseInt(month) - 1]} de ${year}, ${hour12.toString().padStart(2, '0')}:${minute} ${ampm}`;
+                })()}</p>
               </div>
               <div>
                 <p className="text-xs tracking-wider opacity-60 mb-1">ESTADO</p>
@@ -117,7 +141,7 @@ export function Receipt({ onNavigate }: ReceiptProps) {
                 </div>
                 <div>
                   <p className="opacity-60 mb-1">Email</p>
-                  <p>cliente@ejemplo.com</p>
+                  <p>###################</p>
                 </div>
               </div>
             </div>
@@ -146,12 +170,12 @@ export function Receipt({ onNavigate }: ReceiptProps) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="opacity-70">Envío</span>
-                <span>$0.00</span>
+                <span>${(order.shipping ?? 0).toLocaleString('es-MX')}</span>
               </div>
               <div className="pt-4 border-t border-black/10">
                 <div className="flex justify-between items-center">
                   <span className="tracking-widest text-lg">TOTAL PAGADO</span>
-                  <span className="text-3xl tracking-wider">${order.total.toLocaleString('es-MX')}</span>
+                  <span className="text-3xl tracking-wider">${(order.total + (order.shipping ?? 0)).toLocaleString('es-MX')}</span>
                 </div>
               </div>
             </div>
@@ -193,7 +217,10 @@ export function Receipt({ onNavigate }: ReceiptProps) {
                 <Home className="w-4 h-4" />
                 <span className="text-sm tracking-wider">VOLVER AL INICIO</span>
               </button>
-              <button className="flex items-center gap-2 px-6 py-3 border border-black/20 hover:bg-black hover:text-white transition-colors">
+              <button
+                onClick={handleDownloadPDF}
+                className="flex items-center gap-2 px-6 py-3 border border-black/20 hover:bg-black hover:text-white transition-colors no-print"
+              >
                 <Download className="w-4 h-4" />
                 <span className="text-sm tracking-wider">DESCARGAR PDF</span>
               </button>

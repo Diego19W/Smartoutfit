@@ -55,7 +55,7 @@ const faqData: FAQItem[] = [
     id: "6",
     category: "Envíos",
     question: "¿Puedo rastrear mi pedido?",
-    answer: "Sí, una vez que tu pedido sea enviado, recibirás un correo electrónico con el número de rastreo y un enlace para seguir tu paquete en tiempo real. También puedes verificar el estado de tu pedido en tu cuenta de MODAIX.",
+    answer: "Sí, una vez que tu pedido sea enviado, recibirás un correo electrónico con el número de rastreo y un enlace para seguir tu paquete en tiempo real. También puedes verificar el estado de tu pedido en tu cuenta de SMARTOUTFIT.",
     icon: Truck
   },
   {
@@ -106,7 +106,7 @@ const faqData: FAQItem[] = [
     id: "13",
     category: "Productos",
     question: "¿Los productos son originales?",
-    answer: "Absolutamente. MODAIX es una marca de moda de lujo con diseños originales. Trabajamos con materiales de la más alta calidad y fabricamos nuestras prendas siguiendo estrictos estándares de calidad. Cada prenda incluye un certificado de autenticidad.",
+    answer: "Absolutamente. SMARTOUTFIT es una marca de moda de lujo con diseños originales. Trabajamos con materiales de la más alta calidad y fabricamos nuestras prendas siguiendo estrictos estándares de calidad. Cada prenda incluye un certificado de autenticidad.",
     icon: Shield
   },
   {
@@ -134,7 +134,7 @@ const faqData: FAQItem[] = [
   {
     id: "17",
     category: "Cuenta y Seguridad",
-    question: "¿Es seguro comprar en MODAIX?",
+    question: "¿Es seguro comprar en SMARTOUTFIT?",
     answer: "Completamente seguro. Utilizamos encriptación SSL para proteger tu información personal y financiera. No almacenamos datos de tarjetas de crédito en nuestros servidores. Todos los pagos son procesados a través de plataformas certificadas PCI DSS.",
     icon: Shield
   },
@@ -156,7 +156,7 @@ export function FAQ({ onNavigate }: FAQProps) {
 
   const filteredFAQs = faqData.filter(item => {
     const matchesSearch = item.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.answer.toLowerCase().includes(searchTerm.toLowerCase());
+      item.answer.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -166,7 +166,7 @@ export function FAQ({ onNavigate }: FAQProps) {
   };
 
   const getCategoryIcon = (category: string) => {
-    switch(category) {
+    switch (category) {
       case "Pedidos y Pagos": return CreditCard;
       case "Envíos": return Truck;
       case "Devoluciones y Cambios": return RefreshCw;
@@ -209,11 +209,10 @@ export function FAQ({ onNavigate }: FAQProps) {
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-6 py-2 border transition-colors ${
-                selectedCategory === category
+              className={`px-6 py-2 border transition-colors ${selectedCategory === category
                   ? "bg-black text-white border-black"
                   : "border-black/20 hover:bg-black/5"
-              }`}
+                }`}
             >
               <span className="text-sm tracking-wider">
                 {category === "all" ? "TODAS" : category.toUpperCase()}
@@ -235,7 +234,7 @@ export function FAQ({ onNavigate }: FAQProps) {
             {filteredFAQs.map((item) => {
               const Icon = item.icon;
               const isExpanded = expandedId === item.id;
-              
+
               return (
                 <div
                   key={item.id}
@@ -255,12 +254,11 @@ export function FAQ({ onNavigate }: FAQProps) {
                       <h3 className="tracking-wide">{item.question}</h3>
                     </div>
                     <ChevronDown
-                      className={`w-5 h-5 opacity-60 flex-shrink-0 mt-1 transition-transform ${
-                        isExpanded ? "transform rotate-180" : ""
-                      }`}
+                      className={`w-5 h-5 opacity-60 flex-shrink-0 mt-1 transition-transform ${isExpanded ? "transform rotate-180" : ""
+                        }`}
                     />
                   </button>
-                  
+
                   {isExpanded && (
                     <div className="px-6 pb-5 pl-[60px]">
                       <div className="border-t border-black/10 pt-4">

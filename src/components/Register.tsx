@@ -79,16 +79,42 @@ export function Register({ onNavigate }: RegisterProps) {
   };
 
   const handleSocialRegister = async (provider: 'google' | 'facebook' | 'azure') => {
-    // TODO: Implementar registro social
-    // Ejemplo con Supabase:
-    // const { data, error } = await supabase.auth.signInWithOAuth({
-    //   provider: provider,
-    //   options: {
-    //     redirectTo: window.location.origin
-    //   }
-    // })
+    setLoading(true);
+    setErrors({});
 
-    console.log(`Register with ${provider}`);
+    try {
+      let result;
+
+      // Import Firebase functions dynamically
+      const { signInWithGoogle, signInWithFacebook, signInWithMicrosoft, syncFirebaseUserWithBackend, getAuthErrorMessage } = await import('../utils/authService');
+
+      // Call appropriate provider function
+      switch (provider) {
+        case 'google':
+          result = await signInWithGoogle();
+          break;
+        case 'facebook':
+          result = await signInWithFacebook();
+          break;
+        case 'azure':
+          result = await signInWithMicrosoft();
+          break;
+      }
+
+      // Sync with backend
+      await syncFirebaseUserWithBackend(result.user);
+
+      // Registration successful, navigate to home
+      onNavigate('home');
+
+    } catch (error: any) {
+      console.error(`${provider} auth error:`, error);
+      const { getAuthErrorMessage } = await import('../utils/authService');
+      const errorMessage = getAuthErrorMessage(error);
+      setErrors({ submit: errorMessage });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -96,7 +122,7 @@ export function Register({ onNavigate }: RegisterProps) {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl tracking-[0.3em] mb-2">MODAIX</h1>
+          <h1 className="text-4xl tracking-[0.3em] mb-2">SMARTOUTFIT</h1>
           <p className="text-sm opacity-60 tracking-wider">CREAR CUENTA</p>
         </div>
 

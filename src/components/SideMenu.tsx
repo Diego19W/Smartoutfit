@@ -37,7 +37,7 @@ export function SideMenu({ isOpen, onClose, onNavigate }: SideMenuProps) {
       <div className="fixed inset-y-0 left-0 w-80 bg-white z-50 shadow-2xl transform transition-transform">
         {/* Header */}
         <div className="bg-black text-white p-6 flex items-center justify-between">
-          <h3 className="text-2xl tracking-[0.3em]">MODAIX</h3>
+          <h3 className="text-2xl tracking-[0.3em]">SMARTOUTFIT</h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-white/10 rounded transition-colors"
@@ -96,6 +96,14 @@ export function SideMenu({ isOpen, onClose, onNavigate }: SideMenuProps) {
             >
               <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">✨</div>
               <span className="tracking-wider text-sm">COLECCIÓN 2025</span>
+            </button>
+
+            <button
+              onClick={() => handleNavigation('explore')}
+              className="w-full flex items-center gap-3 p-3 hover:bg-neutral-100 transition-colors rounded text-left"
+            >
+              <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">🔍</div>
+              <span className="tracking-wider text-sm">EXPLORAR</span>
             </button>
 
             {/* Divider */}
@@ -168,19 +176,24 @@ export function SideMenu({ isOpen, onClose, onNavigate }: SideMenuProps) {
               <span className="tracking-wider text-sm">PREGUNTAS FRECUENTES</span>
             </button>
 
-            {/* Divider */}
-            <div className="pt-4 pb-2">
-              <div className="h-px bg-black/10"></div>
-            </div>
-            <p className="text-xs tracking-wider opacity-60 px-3 pb-2">ADMINISTRACIÓN</p>
+            {/* Admin Section - Only for admins */}
+            {isAuthenticated && user?.role === 'admin' && (
+              <>
+                {/* Divider */}
+                <div className="pt-4 pb-2">
+                  <div className="h-px bg-black/10"></div>
+                </div>
+                <p className="text-xs tracking-wider opacity-60 px-3 pb-2">ADMINISTRACIÓN</p>
 
-            <button
-              onClick={() => handleNavigation('dashboard')}
-              className="w-full flex items-center gap-3 p-3 hover:bg-neutral-100 transition-colors rounded text-left"
-            >
-              <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">📊</div>
-              <span className="tracking-wider text-sm">DASHBOARD ADMIN</span>
-            </button>
+                <button
+                  onClick={() => handleNavigation('dashboard')}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-neutral-100 transition-colors rounded text-left"
+                >
+                  <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">📊</div>
+                  <span className="tracking-wider text-sm">DASHBOARD ADMIN</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
 

@@ -1,1 +1,5 @@
 node_modules 
+src/utils/firebase.ts
+src/utils/auth.ts
+src/utils/authService.ts
+src/utils/database.ts

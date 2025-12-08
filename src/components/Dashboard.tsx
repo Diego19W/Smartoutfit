@@ -24,7 +24,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     <div className="min-h-screen bg-neutral-50">
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-black/10 min-h-screen sticky top-0">
+        <aside className="w-70 bg-white border-r border-black/10 min-h-screen sticky top-0">
           <div className="p-6 border-b border-black/10">
             <h2 className="tracking-[0.2em]">DASHBOARD</h2>
             <p className="text-sm opacity-60 mt-1">Panel Administrativo</p>

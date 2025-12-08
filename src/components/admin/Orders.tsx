@@ -24,7 +24,7 @@ export function Orders() {
   const loadOrders = async () => {
     setLoading(true);
     try {
-      const ordersFromDB = await getOrders();
+      const ordersFromDB = await getOrders(true); // true = admin mode, get ALL orders
       setOrders(ordersFromDB);
     } catch (error) {
       console.error("Failed to load orders", error);
@@ -132,7 +132,7 @@ export function Orders() {
                   'Ingresos hace 7 días'}
           </p>
           <h4 className="text-2xl tracking-wider">
-            ${filteredOrders.reduce((sum, order) => sum + order.total, 0).toLocaleString('es-MX')}
+            ${filteredOrders.filter(o => o.status !== 'cancelado').reduce((sum, order) => sum + order.total, 0).toLocaleString('es-MX')}
           </h4>
         </div>
         <div className="bg-white p-6 border border-black/10 shadow-sm">
@@ -143,7 +143,7 @@ export function Orders() {
                   'Artículos hace 7 días'}
           </p>
           <h4 className="text-2xl tracking-wider">
-            {filteredOrders.reduce((sum, order) => sum + order.quantity, 0)}
+            {filteredOrders.filter(o => o.status !== 'cancelado').reduce((sum, order) => sum + order.quantity, 0)}
           </h4>
         </div>
       </div>
@@ -300,7 +300,10 @@ export function Orders() {
                   {/* Status Control Buttons */}
                   <div className="flex items-center justify-end gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => handleStatusChange(order.id, 'entregado')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(order.id, 'entregado');
+                      }}
                       className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg"
                       style={{
                         backgroundColor: order.status === 'entregado' ? 'rgb(34, 197, 94)' : '#dcfce7',
@@ -313,7 +316,10 @@ export function Orders() {
                     </button>
 
                     <button
-                      onClick={() => handleStatusChange(order.id, 'pendiente')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(order.id, 'pendiente');
+                      }}
                       className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg"
                       style={{
                         backgroundColor: order.status === 'pendiente' ? 'rgb(234, 179, 8)' : '#fef9c3',
@@ -326,7 +332,10 @@ export function Orders() {
                     </button>
 
                     <button
-                      onClick={() => handleStatusChange(order.id, 'enviado')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(order.id, 'enviado');
+                      }}
                       className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg"
                       style={{
                         backgroundColor: order.status === 'enviado' ? 'rgb(59, 130, 246)' : '#dbeafe',
@@ -339,7 +348,10 @@ export function Orders() {
                     </button>
 
                     <button
-                      onClick={() => handleStatusChange(order.id, 'cancelado')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(order.id, 'cancelado');
+                      }}
                       className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-lg"
                       style={{
                         backgroundColor: order.status === 'cancelado' ? 'rgb(239, 68, 68)' : '#fee2e2',

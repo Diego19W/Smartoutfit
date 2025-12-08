@@ -1,7 +1,80 @@
 import { useState, useEffect } from "react";
-import { CreditCard, Lock, MapPin, User } from "lucide-react";
+import { X, CreditCard, Truck, ShieldCheck, Lock, MapPin, User } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+
+// Initialize Stripe with your Publishable Key
+const stripePromise = loadStripe("pk_test_51SbSaIPTlvFtxvvobNCY471tr8MrhyS55ootamRNGRuf14hUIRnRzP642fei75o3g3nCDFCEBfcJRtKzGJTL4E3w00d2uZSn6P"); // Replace with your Stripe Publishable Key
+
+const StripePaymentForm = ({ onSubmit }: { onSubmit: () => void }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [error, setError] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setProcessing(true);
+
+    const cardElement = elements.getElement(CardElement);
+
+    if (cardElement) {
+      const { error, paymentMethod } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement,
+      });
+
+      if (error) {
+        setError(error.message ?? 'An unknown error occurred');
+        setProcessing(false);
+      } else {
+        console.log('[PaymentMethod]', paymentMethod);
+        // Here you would send paymentMethod.id to your server
+        onSubmit();
+        setProcessing(false);
+      }
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <div className="p-4 border border-black/20 rounded-md mb-4 bg-white">
+        <CardElement options={{
+          style: {
+            base: {
+              fontSize: '16px',
+              color: '#000000',
+              '::placeholder': {
+                color: '#aab7c4',
+              },
+            },
+            invalid: {
+              color: '#9e2146',
+            },
+          },
+        }} />
+      </div>
+      {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
+      <button
+        type="button"
+        onClick={(e) => handleSubmit(e)}
+        disabled={!stripe || processing}
+        className="w-full bg-black text-white py-3 tracking-wider hover:bg-black/80 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        <Lock className="w-4 h-4" />
+        {processing ? 'PROCESANDO...' : 'PAGAR CON STRIPE'}
+      </button>
+    </div>
+  );
+};
 
 interface CheckoutProps {
   onNavigate: (page: string) => void;
@@ -12,6 +85,8 @@ export function Checkout({ onNavigate }: CheckoutProps) {
   const { user, checkSession } = useAuth();
   const [loading, setLoading] = useState(false);
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<'paypal' | 'stripe'>('paypal');
+  const [cardExpiry, setCardExpiry] = useState("");
 
   // Load redeemed points from localStorage
   useEffect(() => {
@@ -62,6 +137,16 @@ export function Checkout({ onNavigate }: CheckoutProps) {
     }));
   };
 
+  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+
+    if (value.length >= 2) {
+      value = value.slice(0, 2) + '/' + value.slice(2, 4);
+    }
+
+    setCardExpiry(value);
+  };
+
   const shipping = total > 2000 ? 0 : 200;
   const pointsDiscount = Math.floor(pointsToRedeem / 1.5);
   const finalTotal = Math.max(0, total + shipping - pointsDiscount);
@@ -79,7 +164,7 @@ export function Checkout({ onNavigate }: CheckoutProps) {
         price: item.price
       })),
       total: finalTotal,
-      paymentMethod: 'card',
+      paymentMethod: paymentMethod,
       pointsRedeemed: pointsToRedeem,
       pointsDiscount: pointsDiscount
     };
@@ -293,89 +378,114 @@ export function Checkout({ onNavigate }: CheckoutProps) {
                 </h3>
 
                 {/* Payment Options */}
-                <div className="grid md:grid-cols-3 gap-3 mb-6">
+                <div className="grid md:grid-cols-2 gap-3 mb-6">
                   <button
                     type="button"
-                    className="p-4 border-2 border-black bg-black text-white tracking-wider text-sm"
-                  >
-                    TARJETA
-                  </button>
-                  <button
-                    type="button"
-                    className="p-4 border border-black/20 hover:border-black tracking-wider text-sm transition-colors"
+                    onClick={() => setPaymentMethod('paypal')}
+                    className={`p-4 border-2 tracking-wider text-sm transition-colors ${paymentMethod === 'paypal' ? 'border-black bg-black text-white' : 'border-black/20 hover:border-black'}`}
                   >
                     PAYPAL
                   </button>
                   <button
                     type="button"
-                    className="p-4 border border-black/20 hover:border-black tracking-wider text-sm transition-colors"
+                    onClick={() => setPaymentMethod('stripe')}
+                    className={`p-4 border-2 tracking-wider text-sm transition-colors ${paymentMethod === 'stripe' ? 'border-black bg-black text-white' : 'border-black/20 hover:border-black'}`}
                   >
-                    TRANSFERENCIA
+                    STRIPE
                   </button>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm tracking-wider mb-2 opacity-70">
-                      NÚMERO DE TARJETA
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="1234 5678 9012 3456"
-                      maxLength={19}
-                      className="w-full p-3 border border-black/20 focus:border-black outline-none placeholder:opacity-40"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm tracking-wider mb-2 opacity-70">
-                        FECHA DE EXPIRACIÓN
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="MM/AA"
-                        maxLength={5}
-                        className="w-full p-3 border border-black/20 focus:border-black outline-none placeholder:opacity-40"
+                {paymentMethod === 'paypal' ? (
+                  <div className="mt-6">
+                    <PayPalScriptProvider options={{
+                      clientId: "test", // Replace with your Sandbox Client ID
+                      currency: "MXN",
+                      intent: "capture"
+                    }}>
+                      <PayPalButtons
+                        style={{ layout: "vertical", shape: "rect" }}
+                        createOrder={(data, actions) => {
+                          return actions.order.create({
+                            intent: "CAPTURE",
+                            payer: {
+                              name: {
+                                given_name: formData.firstName,
+                                surname: formData.lastName
+                              },
+                              email_address: formData.email,
+                              address: {
+                                address_line_1: formData.address,
+                                admin_area_2: formData.city,
+                                admin_area_1: formData.state,
+                                postal_code: formData.zip,
+                                country_code: "MX"
+                              }
+                            },
+                            purchase_units: [
+                              {
+                                amount: {
+                                  currency_code: "MXN",
+                                  value: total.toString(),
+                                  breakdown: {
+                                    item_total: {
+                                      currency_code: "MXN",
+                                      value: total.toString()
+                                    }
+                                  }
+                                },
+                                description: "Compra en SmartOutfit",
+                                shipping: {
+                                  name: {
+                                    full_name: `${formData.firstName} ${formData.lastName}`
+                                  },
+                                  address: {
+                                    address_line_1: formData.address,
+                                    admin_area_2: formData.city,
+                                    admin_area_1: formData.state,
+                                    postal_code: formData.zip,
+                                    country_code: "MX"
+                                  }
+                                }
+                              },
+                            ],
+                          });
+                        }}
+                        onApprove={async (data, actions) => {
+                          if (actions.order) {
+                            const details = await actions.order.capture();
+                            // Handle successful payment here
+                            // You can call handleSubmit or a specific function for PayPal success
+                            console.log("Transaction completed by " + (details.payer?.name?.given_name ?? 'Unknown'));
+                            handleSubmit({ preventDefault: () => { } } as any); // Trigger existing submit logic
+                          }
+                        }}
                       />
-                    </div>
-                    <div>
-                      <label className="block text-sm tracking-wider mb-2 opacity-70">
-                        CVV
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="123"
-                        maxLength={3}
-                        className="w-full p-3 border border-black/20 focus:border-black outline-none placeholder:opacity-40"
-                      />
-                    </div>
+                    </PayPalScriptProvider>
+                    <p className="text-xs text-center text-gray-500 mt-2">
+                      Serás redirigido a PayPal para completar tu pago de forma segura.
+                    </p>
                   </div>
-                  <div>
-                    <label className="block text-sm tracking-wider mb-2 opacity-70">
-                      NOMBRE EN LA TARJETA
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Como aparece en la tarjeta"
-                      className="w-full p-3 border border-black/20 focus:border-black outline-none placeholder:opacity-40"
-                    />
+                ) : paymentMethod === 'stripe' ? (
+                  <div className="mt-6 p-4 border border-black/10 rounded-md">
+                    <Elements stripe={stripePromise}>
+                      <StripePaymentForm onSubmit={() => handleSubmit({ preventDefault: () => { } } as any)} />
+                    </Elements>
                   </div>
-                </div>
+                ) : null}
               </div>
 
               {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-black text-white py-4 tracking-widest hover:bg-black/80 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Lock className="w-5 h-5" />
-                {loading ? 'PROCESANDO...' : 'FINALIZAR COMPRA'}
-              </button>
+              {/* Submit Button - Only show if NOT using Stripe or PayPal (they have their own buttons) */}
+              {paymentMethod !== 'stripe' && paymentMethod !== 'paypal' && (
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-black text-white py-4 tracking-widest hover:bg-black/80 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Lock className="w-5 h-5" />
+                  {loading ? 'PROCESANDO...' : 'FINALIZAR COMPRA'}
+                </button>
+              )}
 
               <p className="text-xs text-center opacity-60">
                 Al realizar tu pedido, aceptas nuestros términos y condiciones
@@ -434,15 +544,15 @@ export function Checkout({ onNavigate }: CheckoutProps) {
             </div>
           </div>
         </div>
-      </div>
+      </div >
 
       {/* DEBUG INFO - TO BE REMOVED */}
-      <div className="bg-gray-100 p-4 mt-8 text-xs font-mono overflow-auto max-w-7xl mx-auto">
+      < div className="bg-gray-100 p-4 mt-8 text-xs font-mono overflow-auto max-w-7xl mx-auto" >
         <p><strong>Debug Info:</strong></p>
         <p>Is Authenticated: {user ? 'Yes' : 'No'}</p>
         <p>User Data:</p>
         <pre>{JSON.stringify(user, null, 2)}</pre>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

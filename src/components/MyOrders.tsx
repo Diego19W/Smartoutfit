@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, Filter as FilterIcon } from "lucide-react";
+import { ShoppingBag, Clock, CheckCircle, XCircle, Truck, Filter as FilterIcon, FileText } from "lucide-react";
+import { ReceiptModal } from "./ReceiptModal";
 
 interface OrderItem {
     id: string;
@@ -34,6 +35,7 @@ export function MyOrders({ onNavigate }: MyOrdersProps) {
     const [loading, setLoading] = useState(true);
     const [timeRange, setTimeRange] = useState<TimeRange>('all');
     const [statusFilter, setStatusFilter] = useState<OrderStatus>('all');
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
     useEffect(() => {
         if (isAuthenticated && user) {
@@ -244,7 +246,20 @@ export function MyOrders({ onNavigate }: MyOrdersProps) {
                                         <p className="text-sm text-neutral-500 mb-1">FECHA</p>
                                         <p className="font-medium flex items-center gap-2">
                                             <Clock className="w-4 h-4" />
-                                            {new Date(order.date).toLocaleDateString()}
+                                            {(() => {
+                                                // Manual date formatting to avoid timezone issues
+                                                const [datePart, timePart] = order.date.split(' ');
+                                                const [year, month, day] = datePart.split('-');
+                                                const [hour, minute] = timePart.split(':');
+
+                                                const monthNames = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
+                                                    'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+                                                const hour12 = parseInt(hour) > 12 ? parseInt(hour) - 12 : parseInt(hour);
+                                                const ampm = parseInt(hour) >= 12 ? 'p.m.' : 'a.m.';
+
+                                                return `${day} ${monthNames[parseInt(month) - 1]} ${year}, ${hour12.toString().padStart(2, '0')}:${minute} ${ampm}`;
+                                            })()}
                                         </p>
                                     </div>
                                     <div>
@@ -254,9 +269,9 @@ export function MyOrders({ onNavigate }: MyOrdersProps) {
                                     <div>
                                         <p className="text-sm text-neutral-500 mb-1">ESTADO</p>
                                         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm ${order.status === 'entregado' ? 'bg-green-100 text-green-800' :
-                                                order.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                                                    order.status === 'enviado' ? 'bg-blue-100 text-blue-800' :
-                                                        'bg-red-100 text-red-800'
+                                            order.status === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
+                                                order.status === 'enviado' ? 'bg-blue-100 text-blue-800' :
+                                                    'bg-red-100 text-red-800'
                                             }`}>
                                             {order.status === 'entregado' ? <CheckCircle className="w-4 h-4" /> :
                                                 order.status === 'pendiente' ? <Clock className="w-4 h-4" /> :
@@ -285,11 +300,30 @@ export function MyOrders({ onNavigate }: MyOrdersProps) {
                                         </div>
                                     ))}
                                 </div>
+
+                                {/* View Ticket Button */}
+                                <div className="mt-6 pt-4 border-t border-black/5">
+                                    <button
+                                        onClick={() => setSelectedOrder(order)}
+                                        className="flex items-center justify-center gap-2 w-full py-3 bg-black text-white tracking-wider hover:bg-black/80 transition-colors"
+                                    >
+                                        <FileText className="w-4 h-4" />
+                                        VER TICKET
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
                 )}
             </div>
+
+            {/* Receipt Modal */}
+            {selectedOrder && (
+                <ReceiptModal
+                    order={selectedOrder}
+                    onClose={() => setSelectedOrder(null)}
+                />
+            )}
         </div>
     );
 }

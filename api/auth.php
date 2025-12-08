@@ -41,6 +41,9 @@ switch ($action) {
     case 'login':
         handleLogin($pdo);
         break;
+    case 'social_login':
+        handleSocialLogin($pdo);
+        break;
     case 'check':
         handleCheckSession();
         break;
@@ -245,6 +248,85 @@ function handleUpdateProfile($pdo) {
     } catch (PDOException $e) {
         http_response_code(500);
         echo json_encode(["message" => "Error updating profile: " . $e->getMessage()]);
+    }
+}
+
+function handleSocialLogin($pdo) {
+    $data = json_decode(file_get_contents("php://input"));
+
+    if (empty($data->firebase_uid) || empty($data->email)) {
+        http_response_code(400);
+        echo json_encode(["message" => "Incomplete data"]);
+        return;
+    }
+
+    try {
+        // Check if user already exists by Firebase UID
+        $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE firebase_uid = :firebase_uid");
+        $stmt->execute([':firebase_uid' => $data->firebase_uid]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user) {
+            // User exists, update login info if needed
+            $userId = $user['id'];
+        } else {
+            // Check if email already exists (user may have registered with email/password first)
+            $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = :email");
+            $stmt->execute([':email' => $data->email]);
+            $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existingUser) {
+                // Link Firebase UID to existing user
+                $stmt = $pdo->prepare("UPDATE usuarios SET firebase_uid = :firebase_uid WHERE id = :id");
+                $stmt->execute([
+                    ':firebase_uid' => $data->firebase_uid,
+                    ':id' => $existingUser['id']
+                ]);
+                $userId = $existingUser['id'];
+                $user = $existingUser;
+            } else {
+                // Create new user
+                $sql = "INSERT INTO usuarios (nombre, email, firebase_uid, tipo_usuario, fecha_registro) 
+                        VALUES (:nombre, :email, :firebase_uid, 'cliente', NOW())";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([
+                    ':nombre' => $data->nombre,
+                    ':email' => $data->email,
+                    ':firebase_uid' => $data->firebase_uid
+                ]);
+                $userId = $pdo->lastInsertId();
+
+                // Fetch the newly created user
+                $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE id = :id");
+                $stmt->execute([':id' => $userId]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+        }
+
+        // Set session
+        $_SESSION['user_id'] = $userId;
+        $_SESSION['user_name'] = $user['nombre'];
+        $_SESSION['user_role'] = $user['tipo_usuario'];
+
+        echo json_encode([
+            "message" => "Social login successful",
+            "user" => [
+                "id" => $user['id'],
+                "nombre" => $user['nombre'],
+                "email" => $user['email'],
+                "role" => $user['tipo_usuario'],
+                "telefono" => $user['telefono'] ?? '',
+                "direccion" => $user['direccion'] ?? '',
+                "ciudad" => $user['ciudad'] ?? '',
+                "estado" => $user['estado'] ?? '',
+                "codigo_postal" => $user['codigo_postal'] ?? '',
+                "puntos" => (int)($user['puntos'] ?? 0)
+            ]
+        ]);
+
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(["message" => "Error: " . $e->getMessage()]);
     }
 }
 ?>

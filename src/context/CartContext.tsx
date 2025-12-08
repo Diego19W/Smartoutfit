@@ -65,13 +65,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
             removeFromCart(productId, size);
             return;
         }
-        setCartItems(prevItems =>
-            prevItems.map(item =>
+
+        setCartItems(prevItems => {
+            const itemIndex = prevItems.findIndex(
+                item => item.id === productId && item.selectedSize === size
+            );
+
+            if (itemIndex === -1) return prevItems;
+
+            const item = prevItems[itemIndex];
+
+            // Validate against sizeStock if available
+            if (item.sizeStock) {
+                const availableStock = item.sizeStock[size as keyof typeof item.sizeStock];
+
+                if (quantity > availableStock) {
+                    // Don't allow quantity to exceed available stock
+                    console.warn(`Cannot set quantity to ${quantity}. Only ${availableStock} available in size ${size}`);
+                    // Set to maximum available stock instead
+                    quantity = availableStock;
+                }
+            }
+
+            return prevItems.map(item =>
                 item.id === productId && item.selectedSize === size
                     ? { ...item, quantity }
                     : item
-            )
-        );
+            );
+        });
     };
 
     const clearCart = () => {

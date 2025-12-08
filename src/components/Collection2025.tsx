@@ -152,10 +152,10 @@ export function Collection2025() {
         {/* Collection Statement */}
         <div className="bg-black text-white p-12 mb-20 text-center">
           <p className="text-xl tracking-wider max-w-3xl mx-auto leading-relaxed">
-            "La Colección 2025 representa la fusión perfecta entre tradición y vanguardia. 
+            "La Colección 2025 representa la fusión perfecta entre tradición y vanguardia.
             Cada pieza ha sido diseñada para expresar individualidad y sofisticación atemporal."
           </p>
-          <p className="mt-6 text-sm tracking-widest opacity-70">— MODAIX DESIGN TEAM</p>
+          <p className="mt-6 text-sm tracking-widest opacity-70">— SMARTOUTFIT DESIGN TEAM</p>
         </div>
 
         {/* All Collection Products */}
@@ -186,7 +186,7 @@ export function Collection2025() {
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="text-center">
                   <h4 className="tracking-wider mb-1 text-sm">{product.name}</h4>
                   <p className="opacity-60 text-sm">${product.price.toLocaleString('es-MX')}</p>
@@ -200,7 +200,7 @@ export function Collection2025() {
         <div className="mt-20 text-center">
           <h3 className="tracking-[0.2em] mb-6">¿NECESITAS AYUDA PARA ELEGIR?</h3>
           <p className="opacity-60 mb-8 max-w-2xl mx-auto">
-            Nuestro AI Stylist puede ayudarte a encontrar las piezas perfectas de la Colección 2025 
+            Nuestro AI Stylist puede ayudarte a encontrar las piezas perfectas de la Colección 2025
             basándose en tu estilo y preferencias
           </p>
           <button className="bg-black text-white px-8 py-4 tracking-widest hover:bg-black/80 transition-colors inline-flex items-center gap-2">

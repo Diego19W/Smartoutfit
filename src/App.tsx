@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CartProvider } from "./context/CartContext";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
 import { Header } from "./components/Header";
 import { Hero } from "./components/Hero";
@@ -20,16 +20,28 @@ import { FAQ } from "./components/FAQ";
 import { SideMenu } from "./components/SideMenu";
 import { MyOrders } from "./components/MyOrders";
 import { FavoritesPage } from "./components/FavoritesPage";
+import { ExplorePage } from "./components/ExplorePage";
+import { Footer } from "./components/Footer";
 import { menProducts, womenProducts } from "./data/products";
 
-type PageType = 'home' | 'stylist' | 'dashboard' | 'men' | 'women' | 'cart' | 'collection' | 'checkout' | 'receipt' | 'login' | 'register' | 'profile' | 'returns' | 'faq' | 'orders' | 'favorites';
+type PageType = 'home' | 'stylist' | 'dashboard' | 'men' | 'women' | 'cart' | 'collection' | 'checkout' | 'receipt' | 'login' | 'register' | 'profile' | 'returns' | 'faq' | 'orders' | 'favorites' | 'explore';
 
-export default function App() {
+function MainApp() {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    // Check for admin URL parameter
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === 'true') {
+      setCurrentPage('dashboard');
+    }
+  }, []);
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page as PageType);
+    window.scrollTo(0, 0);
   };
 
   const renderPage = () => {
@@ -38,70 +50,34 @@ export default function App() {
         return (
           <>
             <Hero onNavigate={handleNavigate} />
-            <ProductGrid />
-
-            {/* Footer */}
-            <footer className="bg-black text-white py-16">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-                  <div>
-                    <h3 className="text-2xl tracking-[0.3em] mb-6">MODAIX</h3>
-                    <p className="text-sm opacity-70 leading-relaxed">
-                      Elegancia redefinida para el mundo moderno.
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="tracking-wider mb-4 text-sm">COMPRAR</h4>
-                    <ul className="space-y-2 text-sm opacity-70">
-                      <li><button onClick={() => setCurrentPage('men')} className="hover:opacity-100 transition-opacity">Hombre</button></li>
-                      <li><button onClick={() => setCurrentPage('women')} className="hover:opacity-100 transition-opacity">Mujer</button></li>
-                      <li><button onClick={() => setCurrentPage('collection')} className="hover:opacity-100 transition-opacity">Nueva Colección</button></li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h4 className="tracking-wider mb-4 text-sm">AYUDA</h4>
-                    <ul className="space-y-2 text-sm opacity-70">
-                      <li><button className="hover:opacity-100 transition-opacity">Contacto</button></li>
-                      <li><button onClick={() => setCurrentPage('returns')} className="hover:opacity-100 transition-opacity">Devoluciones</button></li>
-                      <li><button onClick={() => setCurrentPage('faq')} className="hover:opacity-100 transition-opacity">FAQ</button></li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h4 className="tracking-wider mb-4 text-sm">NEWSLETTER</h4>
-                    <p className="text-sm opacity-70 mb-4">
-                      Recibe las últimas novedades
-                    </p>
-                    <div className="flex">
-                      <input
-                        type="email"
-                        placeholder="Email"
-                        className="flex-1 px-4 py-2 bg-white/10 border border-white/20 text-white placeholder:text-white/50 focus:border-white outline-none"
-                      />
-                      <button className="px-4 py-2 bg-white text-black hover:bg-neutral-200 transition-colors">
-                        →
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-12 pt-8 border-t border-white/10 text-center text-sm opacity-70">
-                  <p>© 2025 MODAIX. Todos los derechos reservados.</p>
-                </div>
-              </div>
-            </footer>
+            <ProductGrid onNavigate={handleNavigate} />
           </>
         );
       case 'stylist':
         return <AIStylist />;
       case 'dashboard':
+        // Protected Admin Route
+        if (isLoading) return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
+
+        if (!isAuthenticated) {
+          return <Login onNavigate={handleNavigate} redirectPage="dashboard" />;
+        }
+
+        if (user?.role !== 'admin') {
+          // If logged in but not admin, redirect to home (or show unauthorized)
+          // Using setTimeout to avoid render loop warning if we change state immediately
+          setTimeout(() => {
+            alert("Acceso denegado. Área exclusiva para administradores.");
+            handleNavigate('home');
+          }, 0);
+          return null;
+        }
+
         return <Dashboard onNavigate={handleNavigate} />;
       case 'men':
-        return <CategoryPage title="HOMBRE" genderFilter="hombre" />;
+        return <CategoryPage title="HOMBRE" genderFilter="hombre" onNavigate={handleNavigate} />;
       case 'women':
-        return <CategoryPage title="MUJER" genderFilter="mujer" />;
+        return <CategoryPage title="MUJER" genderFilter="mujer" onNavigate={handleNavigate} />;
       case 'cart':
         return <Cart onNavigate={handleNavigate} />;
       case 'collection':
@@ -124,40 +100,53 @@ export default function App() {
         return <FAQ onNavigate={handleNavigate} />;
       case 'favorites':
         return <FavoritesPage onNavigate={handleNavigate} />;
+      case 'explore':
+        return <ExplorePage onNavigate={handleNavigate} />;
       default:
         return null;
     }
   };
 
   return (
+    <div className="min-h-screen bg-white">
+      {/* Header - Show on all pages except login/register/checkout/receipt */}
+      {!['login', 'register', 'checkout', 'receipt'].includes(currentPage) && (
+        <Header
+          onNavigate={handleNavigate}
+          currentPage={currentPage}
+          onMenuToggle={() => setIsMenuOpen(true)}
+        />
+      )}
+
+      {/* Side Menu */}
+      <SideMenu
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        onNavigate={(page) => {
+          handleNavigate(page);
+          setIsMenuOpen(false);
+        }}
+      />
+
+      {/* Main Content */}
+      <main>
+        {renderPage()}
+      </main>
+
+      {/* Footer - Show on all pages except dashboard */}
+      {currentPage !== 'dashboard' && (
+        <Footer onNavigate={handleNavigate} />
+      )}
+    </div>
+  );
+}
+
+export default function App() {
+  return (
     <AuthProvider>
       <FavoritesProvider>
         <CartProvider>
-          <div className="min-h-screen bg-white">
-            {/* Header - Show on all pages except login/register/checkout/receipt */}
-            {!['login', 'register', 'checkout', 'receipt'].includes(currentPage) && (
-              <Header
-                onNavigate={handleNavigate}
-                currentPage={currentPage}
-                onMenuToggle={() => setIsMenuOpen(true)}
-              />
-            )}
-
-            {/* Side Menu */}
-            <SideMenu
-              isOpen={isMenuOpen}
-              onClose={() => setIsMenuOpen(false)}
-              onNavigate={(page) => {
-                handleNavigate(page);
-                setIsMenuOpen(false);
-              }}
-            />
-
-            {/* Main Content */}
-            <main>
-              {renderPage()}
-            </main>
-          </div>
+          <MainApp />
         </CartProvider>
       </FavoritesProvider>
     </AuthProvider>
